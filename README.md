@@ -3,7 +3,13 @@
 3×4 판에서 두는 일본 **동물 쇼기**를 태블릿용 HTML5로 만드는 프로젝트.
 두 사람이 태블릿을 눕혀놓고 마주 앉아 둔다.
 
-플레이 가능한 프로토타입: `docs/design/motion.html` (브라우저로 바로 열면 된다)
+`index.html`을 브라우저로 열면 곧바로 대국 화면이다. 규칙과 설계 기록은 오른쪽 아래 **규칙** 버튼을 누르면 서랍으로 열린다.
+
+대국 화면의 원본은 `docs/design/motion.template.html`이고, 빌드하면 저장소 루트의 `index.html`이 된다:
+
+```
+cd docs/design && python build.py motion ../../index.html
+```
 
 ---
 
@@ -35,6 +41,7 @@ docs/
     ├── build.py              # 템플릿 → 단일 HTML 빌드 (에셋을 data URI로 인라인)
     ├── *.template.html       # 편집하는 원본
     ├── *.html                # 빌드 산출물 (그대로 열면 동작)
+    │                          #   motion만 저장소 루트 index.html 로 나간다
     ├── pieces/               # 기본 세트 8종 (알파 마스크 PNG)
     ├── pieces-x/             # 이스터에그 세트 8종
     ├── wood/                 # 목재 텍스처 (세로결 / -90 가로결)

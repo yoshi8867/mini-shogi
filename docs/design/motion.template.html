@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>동물쇼기 대국 프로토타입</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -175,15 +179,31 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 .a-elephant{--src:url(ASSET:pieces/elephant.png)}
 .a-chick   {--src:url(ASSET:pieces/chick-b.png);--k:.66}
 .a-rooster {--src:url(ASSET:pieces/rooster.png);--k:.95}
+/* ════ 규칙 서랍 — 구석에 접어두고 누르면 열린다 ════ */
+.wrap>section.block:first-child{margin-top:0}
+.rules-fab{position:fixed;right:20px;bottom:20px;z-index:40;border:0;cursor:pointer;
+  font:700 14px/1 'Gothic A1',system-ui,sans-serif;color:#17181a;background:var(--mark);
+  border-radius:999px;padding:14px 22px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.rules-fab:hover{background:#e9d494}
+.rules-scrim{position:fixed;inset:0;z-index:41;background:rgba(0,0,0,.55)}
+.rules-drawer{position:fixed;top:0;right:0;bottom:0;z-index:42;width:min(580px,94vw);
+  background:var(--wall-2);border-left:1px solid var(--wall-line);overflow-y:auto;
+  box-shadow:-16px 0 44px rgba(0,0,0,.5)}
+.rules-head{position:sticky;top:0;z-index:1;background:var(--wall-2);
+  border-bottom:1px solid var(--wall-line);display:flex;align-items:center;
+  justify-content:space-between;padding:16px var(--s3)}
+.rules-head h2{font-family:'Gowun Batang',serif;font-size:24px;font-weight:700;margin:0}
+.rules-close{background:none;border:0;cursor:pointer;color:var(--chalk-dim);
+  font-size:18px;line-height:1;padding:6px 8px}
+.rules-close:hover{color:var(--chalk)}
+.rules-body{padding:var(--s2) var(--s3) var(--s5)}
+.rules-body .block{margin-top:var(--s4)}
+.rules-body .block:first-child{margin-top:var(--s2)}
+.rules-body a{color:var(--mark)}
+@media (max-width:560px){.rules-fab{right:12px;bottom:12px;padding:12px 18px}}
 </style>
 
 <div class="wrap">
-
-<header class="masthead">
-  <p class="eyebrow">Direction A · Playable Build</p>
-  <h1>동물쇼기 대국 프로토타입</h1>
-  <p>태블릿을 눕혀놓고 <b>마주 앉아 두는 배치</b>로 전체를 90도 돌렸습니다. 사자 진영이 오른쪽, 호랑이 진영이 왼쪽에 앉습니다 — 기물도 손패도 차례 표시도 승패 알림도 각자 자기 쪽에서 바로 읽힙니다. 규칙은 캐치·<b>트라이</b>·스테일메이트·<b>3회 반복 무승부</b>에 <b>한 수 30초</b> 제한까지 들어갔습니다.</p>
-</header>
 
 <section class="block">
   <div class="play">
@@ -255,56 +275,103 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
   </div>
 </section>
 
-<section class="block">
-  <h2>붙인 판정</h2>
-  <p class="lede">규칙 문서에서 확정한 그대로입니다. 자살수는 막지 않고, 승격은 강제이며, 드롭에는 제약이 없습니다.</p>
-  <table class="tbl">
-    <tr><th>판정</th><th>조건</th><th>구현</th></tr>
-    <tr><td>캐치</td><td>상대 사자를 잡음</td><td>잡은 순간 즉시 승. 외통을 따로 검사하지 않고 실제로 잡히는 것으로 끝냅니다 — 자살수를 막지 않기로 했으니 이게 일관됩니다.</td></tr>
-    <tr><td>트라이</td><td>내 사자가 상대 끝줄에 도달, <b>그 시점에 장군이 아닐 것</b></td><td>사자가 끝줄에 내려앉은 뒤 그 칸이 공격받는지 검사합니다. 드롭으로는 사자를 잡을 수 없으므로 판 위 기물만 봅니다. 공격받는 칸이면 승리가 아니고 대국이 이어집니다.</td></tr>
-    <tr><td>스테일메이트</td><td>둘 수 있는 수가 하나도 없음</td><td>차례가 넘어간 직후 이동과 드롭을 모두 훑어 하나도 없으면 그 플레이어가 <b>패배</b>합니다. 드롭이 있어 실제로는 거의 안 나옵니다.</td></tr>
-    <tr><td>무승부</td><td>같은 국면 3회</td><td>판 배치 + <b>양쪽 손패</b> + 둘 차례까지 묶어 지문을 만들고 3회째에 무승부. 연속 장군도 결국 같은 국면으로 돌아오므로 이 한 규칙이 퍼페추얼 체크까지 덮습니다. 2회째에는 로그로 미리 알립니다.</td></tr>
-    <tr><td>시간 초과</td><td>한 수를 <b>30초</b> 안에 두지 못함</td><td>차례가 시작될 때 30초부터 줄어듭니다. 남은 10초부터 시계가 붉게 깜빡이고 5초부터 초읽기 소리가 납니다. 0이 되면 그 플레이어가 패배합니다. 연출이 도는 동안에는 시계가 멈춥니다.</td></tr>
-  </table>
-</section>
+</div>
 
-<section class="block">
-  <h2>마주 앉는 배치</h2>
-  <div class="cards">
-    <div class="card pick">
-      <h4>판이 가로로 눕습니다</h4>
-      <p>3열 4행 판이 화면에서는 <b>4칸 가로 × 3칸 세로</b>로 놓입니다. 각자에게는 여전히 앞이 상대 쪽, 뒤가 자기 끝줄입니다. 칸 비율을 화면 기준 1.1 : 1로 잡아, 90도 돌아간 코마가 <b>자기 시점에서는 세로로 긴</b> 실물 비율을 유지합니다.</p>
-    </div>
-    <div class="card">
-      <h4>글자도 각자에게 돌립니다</h4>
-      <p>진영 이름, 손패 개수, 남은 시간이 각 플레이어 쪽으로 90도 돌아가 있습니다. 승패 알림과 다시 두기 버튼은 <b>같은 것을 양쪽에 한 벌씩</b> 띄웁니다 — 마주 앉은 게임에서 한쪽만 읽히는 알림은 절반이 못 보는 알림입니다.</p>
-    </div>
-    <div class="card">
-      <h4>손패는 바깥쪽에</h4>
-      <p>각자 자기 앞, 판 바깥에 손패가 쌓입니다. 사자 진영은 오른쪽 아래에서 위로, 호랑이 진영은 왼쪽 위에서 아래로 — 180도 회전 대칭입니다. 손에 든 기물도 자기 방향으로 누워 있어 무엇을 쥐고 있는지 바로 보입니다.</p>
-    </div>
+<button class="rules-fab" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
+<div class="rules-scrim" id="rulesScrim" hidden></div>
+<aside class="rules-drawer" id="rulesDrawer" hidden aria-label="규칙과 설계 기록">
+  <div class="rules-head">
+    <h2>규칙</h2>
+    <button class="rules-close" id="rulesClose" aria-label="닫기">✕</button>
   </div>
-</section>
-
+  <div class="rules-body">
 <section class="block">
-  <h2>착수와 소리</h2>
-  <p class="lede">입력 방식이 소리를 정합니다. 탭하면 들었다 놓은 것이니 탁, 끌면 민 것이니 마찰음 — 설명이 필요 없는 규칙이라 설정으로 빼지 않았습니다.</p>
+  <p class="lede">일본 동물쇼기를 그대로 따릅니다. 기물에 찍힌 먹색 점이 곧 이동 방향입니다.</p>
   <table class="tbl">
-    <tr><th>소리</th><th>언제</th><th>합성 방식</th></tr>
-    <tr><td>탁</td><td>탭해서 놓을 때</td><td>삼각파 <code>185Hz</code> + 사인 <code>460Hz</code>의 빠른 감쇠(나무 몸통)에, 대역통과 <code>2kHz</code>를 통과한 30ms 노이즈(부딪는 순간)를 겹칩니다. 칠 때마다 음정을 ±6% 흔들어 같은 소리가 반복되지 않습니다.</td></tr>
-    <tr><td>끄는 소리</td><td>끌어서 밀 때</td><td>화이트 노이즈를 <code>700Hz</code> 대역통과에 통과시키고 <b>손가락 속도에 따라</b> 음량과 필터 주파수를 실시간으로 올립니다. 멈추면 소리도 멎습니다.</td></tr>
-    <tr><td>들기 / 손패 착지</td><td>집을 때 / 잡은 말이 도착할 때</td><td>같은 나무 소리를 음정만 올리고 세기를 낮춰 씁니다. 판 위가 아니라 옆에서 난 소리로 들립니다.</td></tr>
-    <tr><td>초읽기</td><td>남은 5초부터</td><td>1초마다 아주 짧은 고음 딸깍. 마지막 1초는 음정을 한 단계 더 올립니다.</td></tr>
-    <tr><td>승격</td><td>병아리가 닭이 될 때</td><td>짧은 딸깍 두 번 — 뒤집어 다시 놓는 동작입니다.</td></tr>
+    <tr><th>기물</th><th>움직임</th></tr>
+    <tr><td>사자 · 호랑이</td><td>8방향 1칸. 양쪽의 왕이고, 이것이 잡히면 진다</td></tr>
+    <tr><td>기린</td><td>상하좌우 1칸</td></tr>
+    <tr><td>코끼리</td><td>대각 4방향 1칸</td></tr>
+    <tr><td>병아리</td><td>앞 1칸. 상대 끝줄에 닿으면 <b>닭</b>으로 승격</td></tr>
+    <tr><td>닭</td><td>대각선 뒤 둘을 뺀 6방향 1칸</td></tr>
+  </table>
+  <table class="tbl" style="margin-top:var(--s3)">
+    <tr><th>승패</th><th>조건</th></tr>
+    <tr><td>캐치</td><td>상대의 왕을 잡는다</td></tr>
+    <tr><td>트라이</td><td>내 왕이 상대 끝줄에 닿는다. 단 <b>그 자리가 잡히는 자리가 아닐 것</b></td></tr>
+    <tr><td>무승부</td><td>같은 국면이 세 번 반복된다</td></tr>
   </table>
   <ul class="notes">
-    <li><b>오디오 파일이 하나도 없습니다.</b> 전부 Web Audio로 그 자리에서 만듭니다. 용량이 0이고 매번 조금씩 다른 소리가 납니다.</li>
-    <li><b>브라우저는 첫 터치 전에 소리를 못 냅니다.</b> 자동 재생 정책 때문에 첫 탭에서 오디오를 깨우므로 첫 수의 소리만 아주 미세하게 늦을 수 있습니다.</li>
-    <li><b>드롭도 됩니다.</b> 손패의 말을 탭하면 놓을 수 있는 빈 칸이 전부 뜹니다. 같은 열에 병아리 둘도, 맨 끝줄도, 드롭 외통도 허용하고, 드롭한 병아리는 승격하지 않습니다.</li>
+    <li>잡은 기물은 자기 것이 되어 <b>빈 칸 아무 곳에나</b> 다시 놓을 수 있습니다. 같은 열에 병아리를 둘 놓아도, 맨 끝줄에 놓아도 됩니다 — 대신 놓은 병아리는 그 자리에서 승격하지 않습니다.</li>
+    <li>태블릿을 눕혀놓고 <b>마주 앉아</b> 둡니다. 사자 진영이 오른쪽, 호랑이 진영이 왼쪽입니다.</li>
   </ul>
 </section>
 
-</div>
+<section class="block">
+  <h2>붙인 판정</h2>
+  <p class="lede">규칙 문서에서 확정한 그대로입니다. 자살수는 막지 않고, 승격은 강제이며, 드롭에는 제약이 없습니다.</p>
+  <table class="tbl">
+    <tr><th>판정</th><th>조건</th><th>구현</th></tr>
+    <tr><td>캐치</td><td>상대 사자를 잡음</td><td>잡은 순간 즉시 승. 외통을 따로 검사하지 않고 실제로 잡히는 것으로 끝냅니다 — 자살수를 막지 않기로 했으니 이게 일관됩니다.</td></tr>
+    <tr><td>트라이</td><td>내 사자가 상대 끝줄에 도달, <b>그 시점에 장군이 아닐 것</b></td><td>사자가 끝줄에 내려앉은 뒤 그 칸이 공격받는지 검사합니다. 드롭으로는 사자를 잡을 수 없으므로 판 위 기물만 봅니다. 공격받는 칸이면 승리가 아니고 대국이 이어집니다.</td></tr>
+    <tr><td>스테일메이트</td><td>둘 수 있는 수가 하나도 없음</td><td>차례가 넘어간 직후 이동과 드롭을 모두 훑어 하나도 없으면 그 플레이어가 <b>패배</b>합니다. 드롭이 있어 실제로는 거의 안 나옵니다.</td></tr>
+    <tr><td>무승부</td><td>같은 국면 3회</td><td>판 배치 + <b>양쪽 손패</b> + 둘 차례까지 묶어 지문을 만들고 3회째에 무승부. 연속 장군도 결국 같은 국면으로 돌아오므로 이 한 규칙이 퍼페추얼 체크까지 덮습니다. 2회째에는 로그로 미리 알립니다.</td></tr>
+    <tr><td>시간 초과</td><td>한 수를 <b>30초</b> 안에 두지 못함</td><td>차례가 시작될 때 30초부터 줄어듭니다. 남은 10초부터 시계가 붉게 깜빡이고 5초부터 초읽기 소리가 납니다. 0이 되면 그 플레이어가 패배합니다. 연출이 도는 동안에는 시계가 멈춥니다.</td></tr>
+  </table>
+</section>
+
+<section class="block">
+  <h2>마주 앉는 배치</h2>
+  <div class="cards">
+    <div class="card pick">
+      <h4>판이 가로로 눕습니다</h4>
+      <p>3열 4행 판이 화면에서는 <b>4칸 가로 × 3칸 세로</b>로 놓입니다. 각자에게는 여전히 앞이 상대 쪽, 뒤가 자기 끝줄입니다. 칸 비율을 화면 기준 1.1 : 1로 잡아, 90도 돌아간 코마가 <b>자기 시점에서는 세로로 긴</b> 실물 비율을 유지합니다.</p>
+    </div>
+    <div class="card">
+      <h4>글자도 각자에게 돌립니다</h4>
+      <p>진영 이름, 손패 개수, 남은 시간이 각 플레이어 쪽으로 90도 돌아가 있습니다. 승패 알림과 다시 두기 버튼은 <b>같은 것을 양쪽에 한 벌씩</b> 띄웁니다 — 마주 앉은 게임에서 한쪽만 읽히는 알림은 절반이 못 보는 알림입니다.</p>
+    </div>
+    <div class="card">
+      <h4>손패는 바깥쪽에</h4>
+      <p>각자 자기 앞, 판 바깥에 손패가 쌓입니다. 사자 진영은 오른쪽 아래에서 위로, 호랑이 진영은 왼쪽 위에서 아래로 — 180도 회전 대칭입니다. 손에 든 기물도 자기 방향으로 누워 있어 무엇을 쥐고 있는지 바로 보입니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>착수와 소리</h2>
+  <p class="lede">입력 방식이 소리를 정합니다. 탭하면 들었다 놓은 것이니 탁, 끌면 민 것이니 마찰음 — 설명이 필요 없는 규칙이라 설정으로 빼지 않았습니다.</p>
+  <table class="tbl">
+    <tr><th>소리</th><th>언제</th><th>합성 방식</th></tr>
+    <tr><td>탁</td><td>탭해서 놓을 때</td><td>삼각파 <code>185Hz</code> + 사인 <code>460Hz</code>의 빠른 감쇠(나무 몸통)에, 대역통과 <code>2kHz</code>를 통과한 30ms 노이즈(부딪는 순간)를 겹칩니다. 칠 때마다 음정을 ±6% 흔들어 같은 소리가 반복되지 않습니다.</td></tr>
+    <tr><td>끄는 소리</td><td>끌어서 밀 때</td><td>화이트 노이즈를 <code>700Hz</code> 대역통과에 통과시키고 <b>손가락 속도에 따라</b> 음량과 필터 주파수를 실시간으로 올립니다. 멈추면 소리도 멎습니다.</td></tr>
+    <tr><td>들기 / 손패 착지</td><td>집을 때 / 잡은 말이 도착할 때</td><td>같은 나무 소리를 음정만 올리고 세기를 낮춰 씁니다. 판 위가 아니라 옆에서 난 소리로 들립니다.</td></tr>
+    <tr><td>초읽기</td><td>남은 5초부터</td><td>1초마다 아주 짧은 고음 딸깍. 마지막 1초는 음정을 한 단계 더 올립니다.</td></tr>
+    <tr><td>승격</td><td>병아리가 닭이 될 때</td><td>짧은 딸깍 두 번 — 뒤집어 다시 놓는 동작입니다.</td></tr>
+  </table>
+  <ul class="notes">
+    <li><b>오디오 파일이 하나도 없습니다.</b> 전부 Web Audio로 그 자리에서 만듭니다. 용량이 0이고 매번 조금씩 다른 소리가 납니다.</li>
+    <li><b>브라우저는 첫 터치 전에 소리를 못 냅니다.</b> 자동 재생 정책 때문에 첫 탭에서 오디오를 깨우므로 첫 수의 소리만 아주 미세하게 늦을 수 있습니다.</li>
+    <li><b>드롭도 됩니다.</b> 손패의 말을 탭하면 놓을 수 있는 빈 칸이 전부 뜹니다. 같은 열에 병아리 둘도, 맨 끝줄도, 드롭 외통도 허용하고, 드롭한 병아리는 승격하지 않습니다.</li>
+  </ul>
+</section>
+
+<section class="block">
+  <h2>설계 기록</h2>
+  <p class="lede">여기까지 오면서 검토한 것들. 고른 것과 버린 것이 같이 들어 있습니다.</p>
+  <ul class="notes">
+    <li><a href="docs/design/directions.html"><b>방향 3종</b></a> — 나무와 먹 / 원과 적목 / 밤과 빛</li>
+    <li><a href="docs/design/koma-test.html"><b>코마 적용</b></a> — 라인아트를 오각 코마에</li>
+    <li><a href="docs/design/frames.html"><b>프레임과 표시</b></a> — 오각 6종 · 사각 3종</li>
+    <li><a href="docs/design/wood.html"><b>나뭇결</b></a> — 무결부터 실사 목재 7종까지</li>
+    <li><a href="docs/rules.md"><b>규칙 문서</b></a> — 출처와 구현 확정 사항</li>
+  </ul>
+  <p class="lede" style="margin-top:var(--s3)">목재 텍스처 · <a href="https://polyhaven.com/textures/wood">Poly Haven</a>, CC0<br>
+  원작 · どうぶつしょうぎ — 규칙 키타오 마도카, 그림 후지타 마이코, 2008<br>
+  소스 · <a href="https://github.com/yoshi8867/mini-shogi">github.com/yoshi8867/mini-shogi</a></p>
+</section>
+  </div>
+</aside>
 
 <script>
 (() => {
@@ -882,5 +949,20 @@ start();
 applyBoardWood();
 requestAnimationFrame(measure);
 setTimeout(measure, 400);
+})();
+</script>
+<script>
+(() => {
+  const fab = document.getElementById("rulesFab"), dr = document.getElementById("rulesDrawer"),
+        sc  = document.getElementById("rulesScrim"), cl = document.getElementById("rulesClose");
+  const show = v => {
+    dr.hidden = !v; sc.hidden = !v; fab.hidden = v;
+    fab.setAttribute("aria-expanded", String(v));
+    if (v) { dr.scrollTop = 0; cl.focus(); } else fab.focus();
+  };
+  fab.addEventListener("click", () => show(true));
+  cl.addEventListener("click", () => show(false));
+  sc.addEventListener("click", () => show(false));
+  addEventListener("keydown", e => { if (e.key === "Escape" && !dr.hidden) show(false); });
 })();
 </script>

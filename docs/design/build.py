@@ -1,7 +1,9 @@
 import base64, mimetypes, os, re, sys
 BASE = os.path.dirname(os.path.abspath(__file__))
 name = sys.argv[1] if len(sys.argv) > 1 else "wood"
-src, dst = os.path.join(BASE, f"{name}.template.html"), os.path.join(BASE, f"{name}.html")
+src = os.path.join(BASE, f"{name}.template.html")
+dst = (os.path.abspath(sys.argv[2]) if len(sys.argv) > 2
+       else os.path.join(BASE, f"{name}.html"))
 html = open(src, encoding="utf-8").read()
 
 # ── 1. [[koma|<art-class>|<extra classes>]] 전개 ─────────────────────────
