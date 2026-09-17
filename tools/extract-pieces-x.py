@@ -30,5 +30,5 @@ for r,(y0,y1) in enumerate(ROWS):
         cv=np.zeros((side,side),np.float32); oy,ox=(side-h)//2,(side-w)//2
         cv[oy:oy+h,ox:ox+w]=art
         a8=Image.fromarray((cv*255).astype(np.uint8),'L').resize((SIZE,SIZE),Image.LANCZOS)
-        Image.merge('RGBA',(Image.new('L',(SIZE,SIZE),0),)*3+(a8,)).save(os.path.join(OUT,f"{name}.png"),optimize=True)
+        Image.merge('LA',(Image.new('L',(SIZE,SIZE),0),a8)).save(os.path.join(OUT,f"{name}.png"),optimize=True)
         print(f"{name:10s} {w}x{h}  cov {float((art>0.3).mean())*100:.0f}%")

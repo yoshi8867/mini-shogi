@@ -12,6 +12,7 @@
   --chalk:#eceae5; --chalk-dim:#9b9892; --mark:#d8c07a;
   --s1:8px; --s2:16px; --s3:28px; --s4:48px; --s5:76px;
   --paper:#efe4cd; --ink:#241a10; --ink-soft:#6f5a41; --rule:#d3c0a0;
+  --ground:#e9d8b6;
   --lacquer:#5e3f20; --vermilion:#c2412a;
   --koma-me:#f6e7bd; --koma-you:#f2dcbe;
   --sh-p1:polygon(50% 0%,88% 13%,100% 100%,0% 100%,12% 13%);
@@ -24,29 +25,23 @@
   --t-fine:url(ASSET:wood/fine.jpg);         --t-fine90:url(ASSET:wood/fine-90.jpg);
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--wall);color:var(--chalk);
-  font-family:'Gothic A1',system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1180px;margin:0 auto;padding:var(--s3)}
-.masthead{border-bottom:1px solid var(--wall-line);padding-bottom:var(--s3);margin-bottom:var(--s4)}
-.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mark);
-  font-weight:700;margin:0 0 var(--s2)}
-.masthead h1{font-family:'Gowun Batang',serif;font-weight:700;font-size:clamp(28px,4.4vw,48px);
-  line-height:1.2;margin:0 0 var(--s2);text-wrap:balance}
-.masthead p{max-width:66ch;margin:0;color:var(--chalk-dim);font-size:15px}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:'Gothic A1',system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased;
+  overscroll-behavior:none}
+/* 화면 전체가 판이다. 바깥 테두리도, 어두운 여백도 두지 않는다. */
+.app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+@supports (height:100dvh){.app{height:100dvh}}
 section.block{margin-top:var(--s5)}
 .block>h2{font-family:'Gowun Batang',serif;font-size:26px;margin:0 0 var(--s1);font-weight:700}
 .block>.lede{margin:0 0 var(--s3);max-width:68ch;color:var(--chalk-dim);font-size:14.5px}
 
 /* ════ 대국 화면 ════ */
-/* 판 하나가 화면을 채우되, 세로로 넘치지 않게 가둔다.
-   .screen 이 16:10 이므로 남는 높이 x 1.6 이 태블릿의 최대 너비. */
-.play{display:block}
-.tablet{max-width:min(100%, calc((100vh - 132px) * 1.6));margin:0 auto}
-@supports (height:100dvh){.tablet{max-width:min(100%, calc((100dvh - 132px) * 1.6))}}
-.tablet{background:#0b0b0c;border-radius:20px;padding:11px;box-shadow:0 18px 44px rgba(0,0,0,.4)}
-.screen{aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:#e9d8b6;padding:2.2%}
+/* 화면이 가로로 넓으면 판을 눕히고(4x3), 세로로 길면 세운다(3x4).
+   판 크기는 CSS 로 못 재므로 measure() 안의 fitBoard() 가 잰다. */
+.screen{flex:1;min-height:0;overflow:hidden;background:var(--ground);padding:1.8%}
 .stage{position:relative;width:100%;height:100%;
   display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch}
+body.portrait .stage{grid-template-columns:none;grid-template-rows:1fr auto 1fr}
 
 /* 손패 — 마주 앉은 두 사람 각자의 바깥쪽 */
 .tray{display:flex;min-width:0;position:relative}
@@ -57,6 +52,12 @@ section.block{margin-top:var(--s5)}
 .tag>div{position:absolute;top:50%;left:50%;white-space:nowrap;display:flex;align-items:center;gap:9px}
 .t0 .tag>div{transform:translate(-50%,-50%) rotate(-90deg)}
 .t1 .tag>div{transform:translate(-50%,-50%) rotate(90deg)}
+/* 세로 배치에서는 손패가 판 위아래의 띠가 되고, 이름표는 바깥 끝에 눕는다. */
+body.portrait .tray.t0{flex-direction:column}
+body.portrait .tray.t1{flex-direction:column-reverse}
+body.portrait .tag{flex:0 0 26px}
+body.portrait .t0 .tag>div{transform:translate(-50%,-50%)}
+body.portrait .t1 .tag>div{transform:translate(-50%,-50%) rotate(180deg)}
 .tag b.nm{font-size:13px;font-weight:700;color:var(--ink)}
 .tag .cnt{font-size:10.5px;letter-spacing:.12em;color:#8a6f4e;font-weight:700;
   font-family:'JetBrains Mono',monospace}
@@ -68,11 +69,12 @@ section.block{margin-top:var(--s5)}
 .clock.low{background:var(--vermilion);color:#fff;animation:pulse .9s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
-.board-area{display:flex;align-items:center;justify-content:center;min-width:0}
-.board{position:relative;aspect-ratio:22/15;height:78%;background:var(--lacquer);
+.board-area{display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
+.board{position:relative;background:var(--lacquer);
   padding:2px;border-radius:3px;box-shadow:0 6px 0 #9a6d38,0 14px 22px rgba(60,35,10,.45)}
 .grid{position:absolute;inset:2px;display:grid;
   grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:2px}
+body.portrait .grid{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr)}
 .sqr{position:relative;background-color:var(--bdbase,#e6cd9d);
   background-image:var(--bdtex,var(--t-maple));background-size:400% 300%;
   background-repeat:no-repeat;background-blend-mode:var(--bdblend,multiply)}
@@ -133,6 +135,8 @@ section.block{margin-top:var(--s5)}
 .bmsg .again:hover{background:#f3e6c6;color:var(--ink)}
 .banner.end .again{display:block}
 .bmsg.a{transform:rotate(-90deg)} .bmsg.b{transform:rotate(90deg)}
+body.portrait .banner{flex-direction:column;gap:7%}
+body.portrait .bmsg.a{transform:none} body.portrait .bmsg.b{transform:rotate(180deg)}
 .banner.draw .bmsg{background:#5c4a33}
 
 /* ════ 조작 패널 ════ */
@@ -197,16 +201,25 @@ body.set-line .a-rooster, body.set-solid .a-rooster {--src:var(--p-queen); --k:.
 body.set-line .a-giraffe, body.set-solid .a-giraffe {--src:var(--p-rook);  --k:.64}
 body.set-line .a-elephant,body.set-solid .a-elephant{--src:var(--p-bishop);--k:.70}
 body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.55}
+
+/* ── 기물 세트 · 야수 (숨은 전환) ── */
+body.set-beast .a-lion    {--src:url(ASSET:pieces-x/lion.png)}
+body.set-beast .a-tiger   {--src:url(ASSET:pieces-x/tiger.png)}
+body.set-beast .a-giraffe {--src:url(ASSET:pieces-x/giraffe-a.png);--k:.9}
+body.set-beast .a-elephant{--src:url(ASSET:pieces-x/elephant.png)}
+body.set-beast .a-chick   {--src:url(ASSET:pieces-x/chick-b.png);--k:.66}
+body.set-beast .a-rooster {--src:url(ASSET:pieces-x/rooster.png);--k:.95}
 /* ════ 규칙 서랍 — 구석에 접어두고 누르면 열린다 ════ */
 .wrap>section.block:first-child{margin-top:0}
-.hud{position:fixed;right:20px;bottom:20px;z-index:40;display:flex;gap:8px;align-items:center}
-.hud-btn{border:1px solid var(--wall-line);cursor:pointer;background:var(--wall-2);color:var(--chalk-dim);
-  font:700 13px/1 'Gothic A1',system-ui,sans-serif;border-radius:999px;padding:12px 18px;
-  box-shadow:0 8px 24px rgba(0,0,0,.45)}
-.hud-btn:hover{color:var(--chalk);border-color:var(--chalk-dim)}
-.hud-btn[aria-pressed=false]{color:#6a6762}
-.hud-btn.primary{background:var(--mark);border-color:var(--mark);color:#17181a;font-size:14px;padding:13px 22px}
-.hud-btn.primary:hover{background:#e9d494;color:#17181a}
+.bar{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 12px 9px;min-width:0}
+.hud{display:flex;gap:6px;align-items:center;flex:none}
+.hud-btn{border:1px solid rgba(36,26,16,.2);cursor:pointer;background:rgba(255,255,255,.34);
+  color:var(--ink-soft);font:700 12.5px/1 'Gothic A1',system-ui,sans-serif;
+  border-radius:999px;padding:9px 14px}
+.hud-btn:hover{color:var(--ink);border-color:var(--ink)}
+.hud-btn[aria-pressed=false]{color:#a3927b}
+.hud-btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.hud-btn.primary:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
 .rules-scrim{position:fixed;inset:0;z-index:41;background:rgba(0,0,0,.55)}
 .rules-drawer{position:fixed;top:0;right:0;bottom:0;z-index:42;width:min(580px,94vw);
   background:var(--wall-2);border-left:1px solid var(--wall-line);overflow-y:auto;
@@ -222,24 +235,21 @@ body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.
 .rules-body .block{margin-top:var(--s4)}
 .rules-body .block:first-child{margin-top:var(--s2)}
 .rules-body a{color:var(--mark)}
-@media (max-width:560px){.hud{right:12px;bottom:12px;gap:6px}
-  .hud-btn{padding:10px 13px;font-size:12px}
-  .hud-btn.primary{padding:11px 16px;font-size:13px}}
-.play>.log{border-top:1px solid var(--wall-line);color:var(--chalk-dim);
-  min-height:0;text-align:center;padding-top:12px}
-.play>.log b{color:var(--mark)}
+@media (max-width:600px){.bar{gap:7px;padding:0 8px 7px}
+  .hud{gap:4px} .hud-btn{padding:8px 10px;font-size:11.5px}}
+.bar>.log{flex:1;min-width:0;margin:0;border-top:0;padding:0;min-height:0;
+  color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar>.log b{color:var(--vermilion)}
+.rules-drawer{color:var(--chalk)}
 </style>
 
-<div class="wrap">
-
-<section class="block">
-  <div class="play">
-    <div class="tablet"><div class="screen"><div class="stage" id="stage">
+<div class="app">
+  <div class="screen"><div class="stage" id="stage">
       <div class="tray t1" id="tray1">
         <div class="slot" id="slot1"></div>
         <div class="tag"><div>
           <span class="clock" id="clk1"><b class="sec">30</b>초</span>
-          <b class="nm">호랑이 진영</b><span class="cnt" id="cnt1"></span>
+          <b class="nm">후공</b><span class="cnt" id="cnt1"></span>
         </div></div>
       </div>
       <div class="board-area">
@@ -248,7 +258,7 @@ body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.
       <div class="tray t0 on" id="tray0">
         <div class="slot" id="slot0"></div>
         <div class="tag"><div>
-          <span class="cnt" id="cnt0"></span><b class="nm">사자 진영</b>
+          <span class="cnt" id="cnt0"></span><b class="nm">선공</b>
           <span class="clock" id="clk0"><b class="sec">30</b>초</span>
         </div></div>
       </div>
@@ -258,19 +268,16 @@ body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.
         <div class="bmsg b"><span class="txt"></span><span class="why"></span><button class="again">다시 두기</button></div>
         <div class="bmsg a"><span class="txt"></span><span class="why"></span><button class="again">다시 두기</button></div>
       </div>
-    </div></div></div>
-
+  </div></div>
+  <div class="bar">
     <div class="log" id="log">기물을 탭하세요.</div>
+    <div class="hud" id="hud">
+      <button class="hud-btn" id="setBtn">기물 · 먹선</button>
+      <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
+      <button class="hud-btn" id="reset">처음으로</button>
+      <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
+    </div>
   </div>
-</section>
-
-</div>
-
-<div class="hud" id="hud">
-  <button class="hud-btn" id="setBtn">기물 · 동물</button>
-  <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
-  <button class="hud-btn" id="reset">처음으로</button>
-  <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
 </div>
 <div class="rules-scrim" id="rulesScrim" hidden></div>
 <aside class="rules-drawer" id="rulesDrawer" hidden aria-label="규칙과 설계 기록">
@@ -280,14 +287,14 @@ body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.
   </div>
   <div class="rules-body">
 <section class="block">
-  <p class="lede">일본 동물쇼기를 그대로 따릅니다. 기물에 찍힌 먹색 점이 곧 이동 방향입니다.</p>
+  <p class="lede">기물은 체스 모양이지만 규칙은 일본 동물쇼기 그대로입니다. 룩도 비숍도 <b>한 칸만</b> 갑니다 — 기물에 찍힌 먹색 점이 곧 갈 수 있는 방향입니다.</p>
   <table class="tbl">
     <tr><th>기물</th><th>움직임</th></tr>
-    <tr><td>사자 · 호랑이</td><td>8방향 1칸. 양쪽의 왕이고, 이것이 잡히면 진다</td></tr>
-    <tr><td>기린</td><td>상하좌우 1칸</td></tr>
-    <tr><td>코끼리</td><td>대각 4방향 1칸</td></tr>
-    <tr><td>병아리</td><td>앞 1칸. 상대 끝줄에 닿으면 <b>닭</b>으로 승격</td></tr>
-    <tr><td>닭</td><td>대각선 뒤 둘을 뺀 6방향 1칸</td></tr>
+    <tr><td>킹</td><td>8방향 1칸. 양쪽의 왕이고, 이것이 잡히면 진다</td></tr>
+    <tr><td>룩</td><td>상하좌우 1칸</td></tr>
+    <tr><td>비숍</td><td>대각 4방향 1칸</td></tr>
+    <tr><td>폰</td><td>앞 1칸. 상대 끝줄에 닿으면 <b>퀸</b>으로 승격</td></tr>
+    <tr><td>퀸</td><td>대각선 뒤 둘을 뺀 6방향 1칸</td></tr>
   </table>
   <table class="tbl" style="margin-top:var(--s3)">
     <tr><th>승패</th><th>조건</th></tr>
@@ -297,57 +304,57 @@ body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.
   </table>
   <ul class="notes">
     <li>잡은 기물은 자기 것이 되어 <b>빈 칸 아무 곳에나</b> 다시 놓을 수 있습니다. 같은 열에 병아리를 둘 놓아도, 맨 끝줄에 놓아도 됩니다 — 대신 놓은 병아리는 그 자리에서 승격하지 않습니다.</li>
-    <li>태블릿을 눕혀놓고 <b>마주 앉아</b> 둡니다. 사자 진영이 오른쪽, 호랑이 진영이 왼쪽입니다.</li>
+    <li>둘이 <b>마주 앉아</b> 둡니다. 화면이 가로로 넓으면 좌우로, 세로로 길면 위아래로 앉습니다 — 배치는 화면 비율을 보고 알아서 바뀝니다.</li>
   </ul>
 </section>
 
-<section class="block">
-  <h2>붙인 판정</h2>
-  <p class="lede">규칙 문서에서 확정한 그대로입니다. 자살수는 막지 않고, 승격은 강제이며, 드롭에는 제약이 없습니다.</p>
-  <table class="tbl">
-    <tr><th>판정</th><th>조건</th><th>구현</th></tr>
-    <tr><td>캐치</td><td>상대 사자를 잡음</td><td>잡은 순간 즉시 승. 외통을 따로 검사하지 않고 실제로 잡히는 것으로 끝냅니다 — 자살수를 막지 않기로 했으니 이게 일관됩니다.</td></tr>
-    <tr><td>트라이</td><td>내 사자가 상대 끝줄에 도달, <b>그 시점에 장군이 아닐 것</b></td><td>사자가 끝줄에 내려앉은 뒤 그 칸이 공격받는지 검사합니다. 드롭으로는 사자를 잡을 수 없으므로 판 위 기물만 봅니다. 공격받는 칸이면 승리가 아니고 대국이 이어집니다.</td></tr>
-    <tr><td>스테일메이트</td><td>둘 수 있는 수가 하나도 없음</td><td>차례가 넘어간 직후 이동과 드롭을 모두 훑어 하나도 없으면 그 플레이어가 <b>패배</b>합니다. 드롭이 있어 실제로는 거의 안 나옵니다.</td></tr>
-    <tr><td>무승부</td><td>같은 국면 3회</td><td>판 배치 + <b>양쪽 손패</b> + 둘 차례까지 묶어 지문을 만들고 3회째에 무승부. 연속 장군도 결국 같은 국면으로 돌아오므로 이 한 규칙이 퍼페추얼 체크까지 덮습니다. 2회째에는 로그로 미리 알립니다.</td></tr>
-    <tr><td>시간 초과</td><td>한 수를 <b>30초</b> 안에 두지 못함</td><td>차례가 시작될 때 30초부터 줄어듭니다. 남은 10초부터 시계가 붉게 깜빡이고 5초부터 초읽기 소리가 납니다. 0이 되면 그 플레이어가 패배합니다. 연출이 도는 동안에는 시계가 멈춥니다.</td></tr>
-  </table>
-</section>
-
-<section class="block">
-  <h2>마주 앉는 배치</h2>
-  <div class="cards">
-    <div class="card pick">
-      <h4>판이 가로로 눕습니다</h4>
-      <p>3열 4행 판이 화면에서는 <b>4칸 가로 × 3칸 세로</b>로 놓입니다. 각자에게는 여전히 앞이 상대 쪽, 뒤가 자기 끝줄입니다. 칸 비율을 화면 기준 1.1 : 1로 잡아, 90도 돌아간 코마가 <b>자기 시점에서는 세로로 긴</b> 실물 비율을 유지합니다.</p>
-    </div>
-    <div class="card">
-      <h4>글자도 각자에게 돌립니다</h4>
-      <p>진영 이름, 손패 개수, 남은 시간이 각 플레이어 쪽으로 90도 돌아가 있습니다. 승패 알림과 다시 두기 버튼은 <b>같은 것을 양쪽에 한 벌씩</b> 띄웁니다 — 마주 앉은 게임에서 한쪽만 읽히는 알림은 절반이 못 보는 알림입니다.</p>
-    </div>
-    <div class="card">
-      <h4>손패는 바깥쪽에</h4>
-      <p>각자 자기 앞, 판 바깥에 손패가 쌓입니다. 사자 진영은 오른쪽 아래에서 위로, 호랑이 진영은 왼쪽 위에서 아래로 — 180도 회전 대칭입니다. 손에 든 기물도 자기 방향으로 누워 있어 무엇을 쥐고 있는지 바로 보입니다.</p>
-    </div>
-  </div>
-</section>
-
-<section class="block">
-  <h2>착수와 소리</h2>
-  <p class="lede">입력 방식이 소리를 정합니다. 탭하면 들었다 놓은 것이니 탁, 끌면 민 것이니 마찰음 — 설명이 필요 없는 규칙이라 설정으로 빼지 않았습니다.</p>
-  <table class="tbl">
-    <tr><th>소리</th><th>언제</th><th>합성 방식</th></tr>
-    <tr><td>탁</td><td>탭해서 놓을 때</td><td>삼각파 <code>185Hz</code> + 사인 <code>460Hz</code>의 빠른 감쇠(나무 몸통)에, 대역통과 <code>2kHz</code>를 통과한 30ms 노이즈(부딪는 순간)를 겹칩니다. 칠 때마다 음정을 ±6% 흔들어 같은 소리가 반복되지 않습니다.</td></tr>
-    <tr><td>끄는 소리</td><td>끌어서 밀 때</td><td>화이트 노이즈를 <code>700Hz</code> 대역통과에 통과시키고 <b>손가락 속도에 따라</b> 음량과 필터 주파수를 실시간으로 올립니다. 멈추면 소리도 멎습니다.</td></tr>
-    <tr><td>들기 / 손패 착지</td><td>집을 때 / 잡은 말이 도착할 때</td><td>같은 나무 소리를 음정만 올리고 세기를 낮춰 씁니다. 판 위가 아니라 옆에서 난 소리로 들립니다.</td></tr>
-    <tr><td>초읽기</td><td>남은 5초부터</td><td>1초마다 아주 짧은 고음 딸깍. 마지막 1초는 음정을 한 단계 더 올립니다.</td></tr>
-    <tr><td>승격</td><td>병아리가 닭이 될 때</td><td>짧은 딸깍 두 번 — 뒤집어 다시 놓는 동작입니다.</td></tr>
-  </table>
-  <ul class="notes">
-    <li><b>오디오 파일이 하나도 없습니다.</b> 전부 Web Audio로 그 자리에서 만듭니다. 용량이 0이고 매번 조금씩 다른 소리가 납니다.</li>
-    <li><b>브라우저는 첫 터치 전에 소리를 못 냅니다.</b> 자동 재생 정책 때문에 첫 탭에서 오디오를 깨우므로 첫 수의 소리만 아주 미세하게 늦을 수 있습니다.</li>
-    <li><b>드롭도 됩니다.</b> 손패의 말을 탭하면 놓을 수 있는 빈 칸이 전부 뜹니다. 같은 열에 병아리 둘도, 맨 끝줄도, 드롭 외통도 허용하고, 드롭한 병아리는 승격하지 않습니다.</li>
-  </ul>
+<section class="block">
+  <h2>붙인 판정</h2>
+  <p class="lede">규칙 문서에서 확정한 그대로입니다. 자살수는 막지 않고, 승격은 강제이며, 드롭에는 제약이 없습니다.</p>
+  <table class="tbl">
+    <tr><th>판정</th><th>조건</th><th>구현</th></tr>
+    <tr><td>캐치</td><td>상대 사자를 잡음</td><td>잡은 순간 즉시 승. 외통을 따로 검사하지 않고 실제로 잡히는 것으로 끝냅니다 — 자살수를 막지 않기로 했으니 이게 일관됩니다.</td></tr>
+    <tr><td>트라이</td><td>내 사자가 상대 끝줄에 도달, <b>그 시점에 장군이 아닐 것</b></td><td>사자가 끝줄에 내려앉은 뒤 그 칸이 공격받는지 검사합니다. 드롭으로는 사자를 잡을 수 없으므로 판 위 기물만 봅니다. 공격받는 칸이면 승리가 아니고 대국이 이어집니다.</td></tr>
+    <tr><td>스테일메이트</td><td>둘 수 있는 수가 하나도 없음</td><td>차례가 넘어간 직후 이동과 드롭을 모두 훑어 하나도 없으면 그 플레이어가 <b>패배</b>합니다. 드롭이 있어 실제로는 거의 안 나옵니다.</td></tr>
+    <tr><td>무승부</td><td>같은 국면 3회</td><td>판 배치 + <b>양쪽 손패</b> + 둘 차례까지 묶어 지문을 만들고 3회째에 무승부. 연속 장군도 결국 같은 국면으로 돌아오므로 이 한 규칙이 퍼페추얼 체크까지 덮습니다. 2회째에는 로그로 미리 알립니다.</td></tr>
+    <tr><td>시간 초과</td><td>한 수를 <b>30초</b> 안에 두지 못함</td><td>차례가 시작될 때 30초부터 줄어듭니다. 남은 10초부터 시계가 붉게 깜빡이고 5초부터 초읽기 소리가 납니다. 0이 되면 그 플레이어가 패배합니다. 연출이 도는 동안에는 시계가 멈춥니다.</td></tr>
+  </table>
+</section>
+
+<section class="block">
+  <h2>마주 앉는 배치</h2>
+  <div class="cards">
+    <div class="card pick">
+      <h4>화면 비율이 배치를 정합니다</h4>
+      <p>가로로 넓으면 판을 <b>눕혀</b> 4칸 가로 × 3칸 세로로 놓고 둘이 좌우에 마주 앉습니다. 세로로 길면 판을 <b>세워</b> 3칸 가로 × 4칸 세로로 놓고 위아래에 마주 앉습니다. 어느 쪽이든 칸 비율은 자기 시점에서 1 : 1.1 — 코마가 세로로 긴 실물 비율을 유지합니다.</p>
+    </div>
+    <div class="card">
+      <h4>글자도 각자에게 돌립니다</h4>
+      <p>진영 이름, 손패 개수, 남은 시간이 각 플레이어 쪽으로 90도 돌아가 있습니다. 승패 알림과 다시 두기 버튼은 <b>같은 것을 양쪽에 한 벌씩</b> 띄웁니다 — 마주 앉은 게임에서 한쪽만 읽히는 알림은 절반이 못 보는 알림입니다.</p>
+    </div>
+    <div class="card">
+      <h4>손패는 바깥쪽에</h4>
+      <p>각자 자기 앞, 판 바깥에 손패가 쌓입니다. 선공은 자기 쪽 끝에서 안쪽으로, 후공은 그 <b>180도 회전 대칭</b>으로 — 가로든 세로든 규칙은 같습니다. 손에 든 기물도 자기 방향을 보고 있어 무엇을 쥐고 있는지 바로 읽힙니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>착수와 소리</h2>
+  <p class="lede">입력 방식이 소리를 정합니다. 탭하면 들었다 놓은 것이니 탁, 끌면 민 것이니 마찰음 — 설명이 필요 없는 규칙이라 설정으로 빼지 않았습니다.</p>
+  <table class="tbl">
+    <tr><th>소리</th><th>언제</th><th>합성 방식</th></tr>
+    <tr><td>탁</td><td>탭해서 놓을 때</td><td>삼각파 <code>185Hz</code> + 사인 <code>460Hz</code>의 빠른 감쇠(나무 몸통)에, 대역통과 <code>2kHz</code>를 통과한 30ms 노이즈(부딪는 순간)를 겹칩니다. 칠 때마다 음정을 ±6% 흔들어 같은 소리가 반복되지 않습니다.</td></tr>
+    <tr><td>끄는 소리</td><td>끌어서 밀 때</td><td>화이트 노이즈를 <code>700Hz</code> 대역통과에 통과시키고 <b>손가락 속도에 따라</b> 음량과 필터 주파수를 실시간으로 올립니다. 멈추면 소리도 멎습니다.</td></tr>
+    <tr><td>들기 / 손패 착지</td><td>집을 때 / 잡은 말이 도착할 때</td><td>같은 나무 소리를 음정만 올리고 세기를 낮춰 씁니다. 판 위가 아니라 옆에서 난 소리로 들립니다.</td></tr>
+    <tr><td>초읽기</td><td>남은 5초부터</td><td>1초마다 아주 짧은 고음 딸깍. 마지막 1초는 음정을 한 단계 더 올립니다.</td></tr>
+    <tr><td>승격</td><td>병아리가 닭이 될 때</td><td>짧은 딸깍 두 번 — 뒤집어 다시 놓는 동작입니다.</td></tr>
+  </table>
+  <ul class="notes">
+    <li><b>오디오 파일이 하나도 없습니다.</b> 전부 Web Audio로 그 자리에서 만듭니다. 용량이 0이고 매번 조금씩 다른 소리가 납니다.</li>
+    <li><b>브라우저는 첫 터치 전에 소리를 못 냅니다.</b> 자동 재생 정책 때문에 첫 탭에서 오디오를 깨우므로 첫 수의 소리만 아주 미세하게 늦을 수 있습니다.</li>
+    <li><b>드롭도 됩니다.</b> 손패의 말을 탭하면 놓을 수 있는 빈 칸이 전부 뜹니다. 같은 열에 병아리 둘도, 맨 끝줄도, 드롭 외통도 허용하고, 드롭한 병아리는 승격하지 않습니다.</li>
+  </ul>
 </section>
 
 <section class="block">
@@ -377,12 +384,13 @@ const layer = $("#layer"), hints = $("#hints"), grid = $("#grid"),
 
 /* ═══ 규칙 ═══ */
 const COLS = 3, ROWS = 4;               // 논리: 3열 4행
-const SCOLS = ROWS, SROWS = COLS;       // 화면: 4칸 가로 3칸 세로
+/* 화면이 가로면 눕히고(4x3), 세로면 세운다(3x4). */
+let LAND = true;
+const SCOLS = () => LAND ? ROWS : COLS;
+const SROWS = () => LAND ? COLS : ROWS;
 const ART  = {L:["a-lion","a-tiger"], G:["a-giraffe","a-giraffe"], E:["a-elephant","a-elephant"],
               C:["a-chick","a-chick"], H:["a-rooster","a-rooster"]};
-const NAME = {L:["사자","호랑이"], G:["기린","기린"], E:["코끼리","코끼리"],
-              C:["병아리","병아리"], H:["닭","닭"]};
-const SIDE = ["사자", "호랑이"];
+let NAME, SIDE;                         // 기물 껍데기에 따라 갈린다 — setMode()
 const STEP = {
   L:[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]],
   G:[[0,-1],[1,0],[0,1],[-1,0]],
@@ -391,7 +399,7 @@ const STEP = {
   H:[[0,-1],[1,-1],[1,0],[0,1],[-1,0],[-1,-1]]
 };
 const DIRCLASS = {"0,-1":"n","1,-1":"ne","1,0":"e","1,1":"se","0,1":"s","-1,1":"sw","-1,0":"w","-1,-1":"nw"};
-const ROT = s => s === 0 ? -90 : 90;
+const ROT = s => LAND ? (s === 0 ? -90 : 90) : (s === 0 ? 0 : 180);
 const backRank = s => s === 0 ? 0 : ROWS - 1;
 
 let cells, hand, turn, sel, busy, over, seen;
@@ -545,10 +553,10 @@ function clockStart(){
 /* ═══ 좌표 ═══ */
 const PAD = 2, GAP = 2, FIT = .84;
 let cw = 60, ch = 55, bx = 0, by = 0;
-const ew = () => ch * FIT;        // 눕혀 놓기 전 기준이라 가로/세로가 뒤바뀐다
-const eh = () => cw * FIT;
-const scr = (r,c)   => ({sc: r, sr: COLS - 1 - c});
-const lgc = (sr,sc) => ({r: sc, c: COLS - 1 - sr});
+const ew = () => (LAND ? ch : cw) * FIT;   // 눕히면 코마의 가로/세로가 뒤바뀐다
+const eh = () => (LAND ? cw : ch) * FIT;
+const scr = (r,c)   => LAND ? {sc: r, sr: COLS - 1 - c} : {sc: c, sr: r};
+const lgc = (sr,sc) => LAND ? {r: sc, c: COLS - 1 - sr} : {r: sr, c: sc};
 function cellTopLeft(r,c){
   const {sc, sr} = scr(r,c);
   return {x: bx + sc*(cw+GAP), y: by + sr*(ch+GAP)};
@@ -560,10 +568,15 @@ function sqPos(r,c,side){
 function handPos(side, i){
   const sr = stage.getBoundingClientRect();
   const slot = document.getElementById("slot" + side).getBoundingClientRect();
-  const k = .78, vw = eh() * k, vh = ew() * k;   // 눕힌 상태의 화면상 크기
+  const k = .78;
+  const vw = (LAND ? eh() : ew()) * k, vh = (LAND ? ew() : eh()) * k;  // 화면상 크기
   const gy = vh * .18, gx = vw * .14;
-  const per = Math.max(1, Math.floor((slot.height + gy) / (vh + gy)));
-  const row = i % per, col = Math.floor(i / per);
+  /* 가로 손패는 위아래로 먼저 쌓고, 세로 손패는 옆으로 먼저 쌓는다. */
+  let row, col;
+  if (LAND){ const per = Math.max(1, Math.floor((slot.height + gy) / (vh + gy)));
+             row = i % per; col = Math.floor(i / per); }
+  else     { const per = Math.max(1, Math.floor((slot.width  + gx) / (vw + gx)));
+             col = i % per; row = Math.floor(i / per); }
   const cx = side === 0 ? slot.right - sr.left - vw/2 - col*(vw+gx)
                         : slot.left  - sr.left + vw/2 + col*(vw+gx);
   const cy = side === 0 ? slot.bottom - sr.top - vh/2 - row*(vh+gy)
@@ -573,12 +586,22 @@ function handPos(side, i){
 const tf = t => `translate(${t.x}px,${t.y}px) rotate(${t.rot}deg) scale(${t.s})`;
 function place(el, t, instant){ el._t = {...t}; if (instant) el.style.transform = tf(t); }
 
+/* 판은 남는 자리에 맞춰 최대로. 양쪽 손패 자리를 먼저 떼어 놓고 나머지를 준다. */
+function fitBoard(){
+  const s = stage.getBoundingClientRect();
+  if (!s.width) return;
+  const ratio = LAND ? 22/15 : 15/22;
+  const h = Math.min(s.height * (LAND ? .82 : .68),
+                     s.width  * (LAND ? .60 : .94) / ratio);
+  board.style.height = h + "px"; board.style.width = h * ratio + "px";
+}
 function measure(){
+  fitBoard();
   const sr = stage.getBoundingClientRect(), br = board.getBoundingClientRect();
   if (!br.width || !cells) return;
   bx = br.left - sr.left + PAD; by = br.top - sr.top + PAD;
-  cw = (br.width  - 2*PAD - (SCOLS-1)*GAP) / SCOLS;
-  ch = (br.height - 2*PAD - (SROWS-1)*GAP) / SROWS;
+  cw = (br.width  - 2*PAD - (SCOLS()-1)*GAP) / SCOLS();
+  ch = (br.height - 2*PAD - (SROWS()-1)*GAP) / SROWS();
   document.querySelectorAll(".pc").forEach(e => { e.style.width = ew()+"px"; e.style.height = eh()+"px"; });
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
     const p = cells[r][c]; if (p && p.el) place(p.el, sqPos(r,c,p.s), true);
@@ -593,9 +616,9 @@ function measure(){
       i.style.width = ew()+"px"; i.style.height = eh()+"px";
     }
   });
-  const bw = SCOLS*cw + (SCOLS-1)*GAP, bh = SROWS*ch + (SROWS-1)*GAP;
+  const bw = SCOLS()*cw + (SCOLS()-1)*GAP, bh = SROWS()*ch + (SROWS()-1)*GAP;
   Array.from(grid.children).forEach((sq, i) => {
-    const sc = i % SCOLS, srow = (i / SCOLS) | 0;
+    const sc = i % SCOLS(), srow = (i / SCOLS()) | 0;
     sq.style.backgroundSize = `${bw}px ${bh}px`;
     sq.style.backgroundPosition = `${-sc*(cw+GAP)}px ${-srow*(ch+GAP)}px`;
   });
@@ -648,7 +671,7 @@ async function slide(el, to, ms = 300){
 }
 function thud(r, c){
   const {sc, sr} = scr(r,c);
-  const sq = grid.children[sr*SCOLS + sc];
+  const sq = grid.children[sr*SCOLS() + sc];
   sq.classList.remove("thud"); void sq.offsetWidth; sq.classList.add("thud");
 }
 function say(msg, why, hold){
@@ -846,6 +869,7 @@ function updateTurn(){
 /* ═══ 끌기 ═══ */
 let drag = null;
 function onGrab(e, p){
+  secretTap(p);
   if (busy || over || p.s !== turn){ pick(p); return; }
   audio();
   const [r,c] = find(p);
@@ -908,7 +932,7 @@ function applyBoardWood(){
 function render(){
   layer.innerHTML = ""; clearHints(); grid.innerHTML = "";
   banner.classList.remove("on", "draw", "end");
-  for (let i = 0; i < SROWS*SCOLS; i++)
+  for (let i = 0; i < SROWS()*SCOLS(); i++)
     grid.appendChild(Object.assign(document.createElement("div"), {className:"sqr"}));
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
     const p = cells[r][c];
@@ -929,29 +953,73 @@ stage.addEventListener("pointerdown", e => {
 banner.querySelectorAll(".again").forEach(b =>
   b.addEventListener("click", e => { e.stopPropagation(); start(); }));
 $("#reset").addEventListener("click", () => start());
-/* 기물 세트 — 동물 / 체스 먹선 / 체스 실루엣 */
-const SETS = [["", "동물"], ["set-line", "체스 · 먹선"], ["set-solid", "체스 · 실루엣"]];
-let setIdx = 0;
-$("#setBtn").addEventListener("click", e => {
-  document.body.classList.remove("set-line", "set-solid");
-  setIdx = (setIdx + 1) % SETS.length;
-  const [cls, label] = SETS[setIdx];
-  if (cls) document.body.classList.add(cls);
-  e.currentTarget.textContent = "기물 · " + label;
+/* ═══ 기물 껍데기 ═══
+   기본은 체스. 같은 기물을 일곱 번 연속 두드리면 바뀐다 — 버튼으로 내놓지 않는다.
+     체스에서 킹 x7      → 동물
+     동물에서 사자·호랑이 x7 → 체스
+     동물에서 병아리 x7    → 야수 (다시 x7 이면 동물) */
+const NAMESET = {
+  chess:  {L:["킹","킹"], G:["룩","룩"], E:["비숍","비숍"], C:["폰","폰"], H:["퀸","퀸"]},
+  animal: {L:["사자","호랑이"], G:["기린","기린"], E:["코끼리","코끼리"],
+           C:["병아리","병아리"], H:["닭","닭"]}
+};
+const SIDESET = {chess:["선공","후공"], animal:["사자","호랑이"]};
+const MODEMSG = {chess:"체스", animal:"동물", beast:"야수"};
+let mode = "chess", chessStyle = "set-line";
+function setMode(m, quiet){
+  mode = m;
+  const fam = m === "chess" ? "chess" : "animal";
+  NAME = NAMESET[fam]; SIDE = SIDESET[fam];
+  document.body.classList.remove("set-line", "set-solid", "set-beast");
+  if (m === "chess") document.body.classList.add(chessStyle);
+  else if (m === "beast") document.body.classList.add("set-beast");
+  [0,1].forEach(s => $("#tray" + s + " .nm").textContent =
+    SIDE[s] + (fam === "chess" ? "" : " 진영"));
+  const b = $("#setBtn");
+  b.hidden = m !== "chess";
+  b.textContent = "기물 · " + (chessStyle === "set-line" ? "먹선" : "실루엣");
+  if (quiet) return;
+  tak();
+  log.innerHTML = `기물 <b>${MODEMSG[m]}</b>`;
+  if (!over) say(MODEMSG[m], "", 1100);
+}
+/* 0.6초 안쪽 간격으로 같은 기물을 일곱 번. 보통 대국에서는 나오지 않는 속도다. */
+let tapP = null, tapN = 0, tapAt = 0;
+function secretTap(p){
+  const now = performance.now();
+  if (p !== tapP || now - tapAt > 600){ tapP = p; tapN = 0; }
+  tapAt = now;
+  if (++tapN < 7) return;
+  tapN = 0;
+  if (p.t === "L") setMode(mode === "chess" ? "animal" : "chess");
+  else if (p.t === "C" && mode !== "chess") setMode(mode === "beast" ? "animal" : "beast");
+}
+$("#setBtn").addEventListener("click", () => {
+  chessStyle = chessStyle === "set-line" ? "set-solid" : "set-line";
+  setMode("chess", true);
 });
+/* 화면 비율이 배치를 정한다 */
+function applyOrient(){
+  LAND = innerWidth >= innerHeight;
+  document.body.classList.toggle("portrait", !LAND);
+  measure();
+}
 $("#sndBtn").addEventListener("click", e => {
   sndOn = !sndOn;
   if (!sndOn) fricStop();
   e.currentTarget.setAttribute("aria-pressed", String(sndOn));
   e.currentTarget.textContent = sndOn ? "소리 켜짐" : "소리 꺼짐";
 });
-addEventListener("resize", measure);
-if (window.ResizeObserver){ const ro = new ResizeObserver(() => measure()); ro.observe(stage); ro.observe(board); }
+addEventListener("resize", applyOrient);
+addEventListener("orientationchange", () => setTimeout(applyOrient, 80));
+if (window.ResizeObserver){ const ro = new ResizeObserver(() => measure()); ro.observe(stage); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+setMode("chess", true);
+applyOrient();
 start();
 applyBoardWood();
-requestAnimationFrame(measure);
-setTimeout(measure, 400);
+requestAnimationFrame(applyOrient);
+setTimeout(applyOrient, 400);
 })();
 </script>
 <script>
