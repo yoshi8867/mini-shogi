@@ -2,7 +2,7 @@
 <html lang="ko">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>동물쇼기 대국 프로토타입</title>
+<title>미니쇼기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@300;400;700;900&family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap">
@@ -182,6 +182,21 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 .a-elephant{--src:url(ASSET:pieces/elephant.png)}
 .a-chick   {--src:url(ASSET:pieces/chick-b.png);--k:.66}
 .a-rooster {--src:url(ASSET:pieces/rooster.png);--k:.95}
+
+/* ── 기물 세트 · 체스 (Cburnett, CC BY-SA 3.0) ──────────────────────
+   동물 그림보다 한 단계 작게 잡는다. 칸에 여백이 남아야 코마로 읽힌다. */
+body.set-line{--p-king:url(ASSET:pieces-chess-line/king.png);
+  --p-queen:url(ASSET:pieces-chess-line/queen.png); --p-rook:url(ASSET:pieces-chess-line/rook.png);
+  --p-bishop:url(ASSET:pieces-chess-line/bishop.png); --p-pawn:url(ASSET:pieces-chess-line/pawn.png)}
+body.set-solid{--p-king:url(ASSET:pieces-chess/king.png);
+  --p-queen:url(ASSET:pieces-chess/queen.png); --p-rook:url(ASSET:pieces-chess/rook.png);
+  --p-bishop:url(ASSET:pieces-chess/bishop.png); --p-pawn:url(ASSET:pieces-chess/pawn.png)}
+body.set-line .a-lion,    body.set-solid .a-lion,
+body.set-line .a-tiger,   body.set-solid .a-tiger   {--src:var(--p-king);  --k:.78}
+body.set-line .a-rooster, body.set-solid .a-rooster {--src:var(--p-queen); --k:.74}
+body.set-line .a-giraffe, body.set-solid .a-giraffe {--src:var(--p-rook);  --k:.64}
+body.set-line .a-elephant,body.set-solid .a-elephant{--src:var(--p-bishop);--k:.70}
+body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.55}
 /* ════ 규칙 서랍 — 구석에 접어두고 누르면 열린다 ════ */
 .wrap>section.block:first-child{margin-top:0}
 .hud{position:fixed;right:20px;bottom:20px;z-index:40;display:flex;gap:8px;align-items:center}
@@ -252,6 +267,7 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 </div>
 
 <div class="hud" id="hud">
+  <button class="hud-btn" id="setBtn">기물 · 동물</button>
   <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
   <button class="hud-btn" id="reset">처음으로</button>
   <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
@@ -345,6 +361,7 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
     <li><a href="docs/rules.md"><b>규칙 문서</b></a> — 출처와 구현 확정 사항</li>
   </ul>
   <p class="lede" style="margin-top:var(--s3)">목재 텍스처 · <a href="https://polyhaven.com/textures/wood">Poly Haven</a>, CC0<br>
+  체스 기물 · <a href="https://commons.wikimedia.org/wiki/User:Cburnett">Cburnett</a>, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a><br>
   원작 · どうぶつしょうぎ — 규칙 키타오 마도카, 그림 후지타 마이코, 2008<br>
   소스 · <a href="https://github.com/yoshi8867/mini-shogi">github.com/yoshi8867/mini-shogi</a></p>
 </section>
@@ -912,6 +929,16 @@ stage.addEventListener("pointerdown", e => {
 banner.querySelectorAll(".again").forEach(b =>
   b.addEventListener("click", e => { e.stopPropagation(); start(); }));
 $("#reset").addEventListener("click", () => start());
+/* 기물 세트 — 동물 / 체스 먹선 / 체스 실루엣 */
+const SETS = [["", "동물"], ["set-line", "체스 · 먹선"], ["set-solid", "체스 · 실루엣"]];
+let setIdx = 0;
+$("#setBtn").addEventListener("click", e => {
+  document.body.classList.remove("set-line", "set-solid");
+  setIdx = (setIdx + 1) % SETS.length;
+  const [cls, label] = SETS[setIdx];
+  if (cls) document.body.classList.add(cls);
+  e.currentTarget.textContent = "기물 · " + label;
+});
 $("#sndBtn").addEventListener("click", e => {
   sndOn = !sndOn;
   if (!sndOn) fricStop();

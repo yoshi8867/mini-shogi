@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>체스 기물 얹어보기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@300;400;700&family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --wall:#17181a; --wall-2:#1f2124; --wall-line:#2e3136;
+  --chalk:#eceae5; --chalk-dim:#9b9892; --mark:#d8c07a;
+  --s1:8px; --s2:16px; --s3:28px; --s4:48px; --s5:76px;
+  --ink:#241a10; --ink-soft:#6f5a41;
+  --koma-me:#f6e7bd; --koma-you:#f2dcbe;
+  --sh-p1:polygon(50% 0%,88% 13%,100% 100%,0% 100%,12% 13%);
+  --t-maple90:url(ASSET:wood/maple-90.jpg);
+  --t-okoume90:url(ASSET:wood/okoume-90.jpg);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--wall);color:var(--chalk);
+  font-family:'Gothic A1',system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:var(--s4) var(--s3) var(--s5)}
+
+.masthead{border-bottom:1px solid var(--wall-line);padding-bottom:var(--s3);margin-bottom:var(--s4)}
+.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mark);
+  font-weight:700;margin:0 0 var(--s2)}
+h1{font-family:'Gowun Batang',serif;font-weight:700;font-size:clamp(26px,4vw,42px);
+  line-height:1.2;margin:0 0 var(--s2)}
+.masthead p{max-width:66ch;margin:0;color:var(--chalk-dim);font-size:15px}
+
+section.block{margin-top:var(--s5)}
+.block>h2{font-family:'Gowun Batang',serif;font-size:26px;margin:0 0 var(--s1);font-weight:700}
+.block>.lede{margin:0 0 var(--s3);max-width:68ch;color:var(--chalk-dim);font-size:14.5px}
+
+/* ── 코마 (motion 과 같은 렌더링) ─────────────────────────────────── */
+.koma{position:relative;width:var(--w,116px);aspect-ratio:1/1.1;
+  filter:drop-shadow(0 2px 1.5px rgba(60,35,10,.45))}
+.face{position:absolute;inset:0;clip-path:var(--sh-p1);
+  background-color:var(--koma-bg,var(--koma-me));
+  background-image:var(--tex,var(--t-maple90)),
+    linear-gradient(158deg,rgba(255,252,228,.6) 0%,rgba(255,255,255,0) 44%,rgba(140,96,48,.26) 100%);
+  background-size:cover,auto;background-blend-mode:multiply,normal}
+.you-koma{--koma-bg:var(--koma-you);--tex:var(--t-okoume90)}
+.box{position:absolute;left:15%;width:70%;aspect-ratio:1;top:20%}
+.art{position:absolute;inset:0;transform:scale(var(--k,1));
+  -webkit-mask:var(--src) center/contain no-repeat;mask:var(--src) center/contain no-repeat;
+  background:var(--ink)}
+.m{position:absolute;width:3.6%;aspect-ratio:1;background:var(--ink);
+  border-radius:50%;transform:translate(-50%,-50%)}
+.n{left:50%;top:0} .ne{left:100%;top:0} .e{left:100%;top:50%} .se{left:100%;top:100%}
+.s{left:50%;top:100%} .sw{left:0;top:100%} .w{left:0;top:50%} .nw{left:0;top:0}
+
+/* ── 세트별 기물 그림 ──────────────────────────────────────────────── */
+.s-animal .a-lion    {--src:url(ASSET:pieces/lion.png)}
+.s-animal .a-tiger   {--src:url(ASSET:pieces/tiger.png)}
+.s-animal .a-giraffe {--src:url(ASSET:pieces/giraffe-a.png);--k:.9}
+.s-animal .a-elephant{--src:url(ASSET:pieces/elephant.png)}
+.s-animal .a-chick   {--src:url(ASSET:pieces/chick-b.png);--k:.66}
+.s-animal .a-rooster {--src:url(ASSET:pieces/rooster.png);--k:.95}
+
+.s-chess{--p-king:url(ASSET:pieces-chess/king.png);     --p-queen:url(ASSET:pieces-chess/queen.png);
+  --p-rook:url(ASSET:pieces-chess/rook.png);             --p-bishop:url(ASSET:pieces-chess/bishop.png);
+  --p-pawn:url(ASSET:pieces-chess/pawn.png)}
+.s-line{--p-king:url(ASSET:pieces-chess-line/king.png);  --p-queen:url(ASSET:pieces-chess-line/queen.png);
+  --p-rook:url(ASSET:pieces-chess-line/rook.png);        --p-bishop:url(ASSET:pieces-chess-line/bishop.png);
+  --p-pawn:url(ASSET:pieces-chess-line/pawn.png)}
+
+/* 동물 그림보다 한 단계 작게 — 칸에 여백이 남아야 코마로 읽힌다 */
+.s-chess .a-lion,    .s-line .a-lion,
+.s-chess .a-tiger,   .s-line .a-tiger   {--src:var(--p-king);  --k:.78}
+.s-chess .a-rooster, .s-line .a-rooster {--src:var(--p-queen); --k:.74}
+.s-chess .a-giraffe, .s-line .a-giraffe {--src:var(--p-rook);  --k:.64}
+.s-chess .a-elephant,.s-line .a-elephant{--src:var(--p-bishop);--k:.70}
+.s-chess .a-chick,   .s-line .a-chick   {--src:var(--p-pawn);  --k:.55}
+
+/* ── 배치 ─────────────────────────────────────────────────────────── */
+.row{display:flex;gap:var(--s2);flex-wrap:wrap;align-items:flex-start}
+.cell{text-align:center}
+.cell .cap{margin-top:9px;font-size:12px;color:var(--chalk-dim);line-height:1.5}
+.cell .cap b{display:block;color:var(--chalk);font-size:13px;font-weight:700}
+.side{margin-top:var(--s3)}
+.side>h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--mark);font-weight:700;margin:0 0 var(--s2)}
+
+/* 판 위에 올렸을 때 */
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:#5e3f20;
+  padding:2px;width:min(560px,100%);box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.sq{aspect-ratio:1/1.1;background-image:url(ASSET:wood/maple.jpg);background-size:cover;
+  background-color:#e6cd9d;background-blend-mode:multiply;display:grid;place-items:center}
+.sq>.koma{--w:76%}
+.sq>.flip{width:76%;transform:rotate(180deg)}
+.sq>.flip>.koma{--w:100%}
+
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin-top:var(--s2)}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--mark);font-weight:700;border-bottom:1px solid var(--wall-line);padding:0 14px 9px 0}
+.tbl td{border-bottom:1px solid var(--wall-line);padding:11px 14px 11px 0;
+  color:var(--chalk-dim);vertical-align:top}
+.tbl td:first-child{color:var(--chalk);font-weight:700;white-space:nowrap}
+.notes{margin:var(--s3) 0 0;padding:0;list-style:none;color:var(--chalk-dim);font-size:13.5px}
+.notes li{position:relative;padding-left:16px;margin-top:9px}
+.notes li:before{content:"·";position:absolute;left:4px;color:var(--mark)}
+.notes b{color:var(--chalk)}
+a{color:var(--mark)}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Piece set · 얹어보기</p>
+  <h1>체스 기물을 나뭇결에 얹으면</h1>
+  <p>검정 체스 기물을 지금 쓰는 알파 마스크 방식 그대로 코마에 새겼습니다. 같은 나뭇결, 같은 오각 프레임, 같은 먹색 이동점입니다. 마스크를 뽑는 방식 두 가지를 나란히 놓았으니 보고 고르시면 됩니다.</p>
+</header>
+
+<section class="block">
+  <h2>대응</h2>
+  <table class="tbl">
+    <tr><th>체스</th><th>동물쇼기</th><th>움직임</th></tr>
+    <tr><td>킹</td><td>사자 · 호랑이</td><td>8방향 1칸. 양쪽의 왕</td></tr>
+    <tr><td>퀸</td><td>닭</td><td>대각선 뒤 둘을 뺀 6방향 1칸</td></tr>
+    <tr><td>룩</td><td>기린</td><td>상하좌우 1칸</td></tr>
+    <tr><td>비숍</td><td>코끼리</td><td>대각 4방향 1칸</td></tr>
+    <tr><td>폰</td><td>병아리</td><td>앞 1칸. 끝줄에 닿으면 퀸으로 승격</td></tr>
+  </table>
+</section>
+
+<section class="block">
+  <h2>A · 실루엣</h2>
+  <p class="lede">기물 전체를 하나의 먹덩어리로 찍습니다. 멀리서도 무슨 말인지 바로 읽히고, 판 위에서 무게감이 있습니다. 대신 내부 묘사가 사라져 퀸과 킹이 작게 보일 때 비슷해집니다.</p>
+  <div class="side s-chess">
+    <h3>내 코마 · 흰단풍</h3>
+    <div class="row">
+      <div class="cell">[[koma|a-lion]]<span class="cap"><b>킹</b>사자</span></div>
+      <div class="cell">[[koma|a-rooster]]<span class="cap"><b>퀸</b>닭</span></div>
+      <div class="cell">[[koma|a-giraffe]]<span class="cap"><b>룩</b>기린</span></div>
+      <div class="cell">[[koma|a-elephant]]<span class="cap"><b>비숍</b>코끼리</span></div>
+      <div class="cell">[[koma|a-chick]]<span class="cap"><b>폰</b>병아리</span></div>
+    </div>
+  </div>
+  <div class="side s-chess">
+    <h3>상대 코마 · 오쿠메</h3>
+    <div class="row">
+      <div class="cell">[[koma|a-tiger|you-koma]]<span class="cap"><b>킹</b>호랑이</span></div>
+      <div class="cell">[[koma|a-rooster|you-koma]]<span class="cap"><b>퀸</b>닭</span></div>
+      <div class="cell">[[koma|a-giraffe|you-koma]]<span class="cap"><b>룩</b>기린</span></div>
+      <div class="cell">[[koma|a-elephant|you-koma]]<span class="cap"><b>비숍</b>코끼리</span></div>
+      <div class="cell">[[koma|a-chick|you-koma]]<span class="cap"><b>폰</b>병아리</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>B · 먹선</h2>
+  <p class="lede">체스 기물의 흰 윤곽선을 그대로 뚫어 나뭇결이 비쳐 나오게 했습니다. 지금 동물 그림과 밀도가 비슷하고 새김처럼 보입니다. 대신 작게 줄이면 선이 가늘어 뭉칩니다.</p>
+  <div class="side s-line">
+    <h3>내 코마 · 흰단풍</h3>
+    <div class="row">
+      <div class="cell">[[koma|a-lion]]<span class="cap"><b>킹</b>사자</span></div>
+      <div class="cell">[[koma|a-rooster]]<span class="cap"><b>퀸</b>닭</span></div>
+      <div class="cell">[[koma|a-giraffe]]<span class="cap"><b>룩</b>기린</span></div>
+      <div class="cell">[[koma|a-elephant]]<span class="cap"><b>비숍</b>코끼리</span></div>
+      <div class="cell">[[koma|a-chick]]<span class="cap"><b>폰</b>병아리</span></div>
+    </div>
+  </div>
+  <div class="side s-line">
+    <h3>상대 코마 · 오쿠메</h3>
+    <div class="row">
+      <div class="cell">[[koma|a-tiger|you-koma]]<span class="cap"><b>킹</b>호랑이</span></div>
+      <div class="cell">[[koma|a-rooster|you-koma]]<span class="cap"><b>퀸</b>닭</span></div>
+      <div class="cell">[[koma|a-giraffe|you-koma]]<span class="cap"><b>룩</b>기린</span></div>
+      <div class="cell">[[koma|a-elephant|you-koma]]<span class="cap"><b>비숍</b>코끼리</span></div>
+      <div class="cell">[[koma|a-chick|you-koma]]<span class="cap"><b>폰</b>병아리</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>지금 쓰는 동물 그림</h2>
+  <p class="lede">비교용입니다. 같은 크기, 같은 나뭇결.</p>
+  <div class="side s-animal">
+    <div class="row">
+      <div class="cell">[[koma|a-lion]]<span class="cap"><b>사자</b>킹</span></div>
+      <div class="cell">[[koma|a-rooster]]<span class="cap"><b>닭</b>퀸</span></div>
+      <div class="cell">[[koma|a-giraffe]]<span class="cap"><b>기린</b>룩</span></div>
+      <div class="cell">[[koma|a-elephant]]<span class="cap"><b>코끼리</b>비숍</span></div>
+      <div class="cell">[[koma|a-chick]]<span class="cap"><b>병아리</b>폰</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>실제 판 크기로</h2>
+  <p class="lede">대국 화면과 같은 초기 배치입니다. 코마가 판 칸의 78%까지 줄었을 때 읽히는지 보세요. 위가 상대, 아래가 나입니다.</p>
+
+  <div class="side s-chess">
+    <h3>A · 실루엣</h3>
+    <div class="board">
+      <div class="sq"><div class="flip">[[koma|a-giraffe|you-koma]]</div></div>
+      <div class="sq"><div class="flip">[[koma|a-tiger|you-koma]]</div></div>
+      <div class="sq"><div class="flip">[[koma|a-elephant|you-koma]]</div></div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq"><div class="flip">[[koma|a-chick|you-koma]]</div></div>
+      <div class="sq">[[koma|a-chick]]</div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq">[[koma|a-elephant]]</div>
+      <div class="sq">[[koma|a-lion]]</div>
+      <div class="sq">[[koma|a-giraffe]]</div>
+    </div>
+  </div>
+
+  <div class="side s-line">
+    <h3>B · 먹선</h3>
+    <div class="board">
+      <div class="sq"><div class="flip">[[koma|a-giraffe|you-koma]]</div></div>
+      <div class="sq"><div class="flip">[[koma|a-tiger|you-koma]]</div></div>
+      <div class="sq"><div class="flip">[[koma|a-elephant|you-koma]]</div></div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq"><div class="flip">[[koma|a-chick|you-koma]]</div></div>
+      <div class="sq">[[koma|a-chick]]</div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq">[[koma|a-elephant]]</div>
+      <div class="sq">[[koma|a-lion]]</div>
+      <div class="sq">[[koma|a-giraffe]]</div>
+    </div>
+  </div>
+
+  <div class="side s-animal">
+    <h3>지금 · 동물</h3>
+    <div class="board">
+      <div class="sq"><div class="flip">[[koma|a-giraffe|you-koma]]</div></div>
+      <div class="sq"><div class="flip">[[koma|a-tiger|you-koma]]</div></div>
+      <div class="sq"><div class="flip">[[koma|a-elephant|you-koma]]</div></div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq"><div class="flip">[[koma|a-chick|you-koma]]</div></div>
+      <div class="sq">[[koma|a-chick]]</div>
+      <div class="sq"></div>
+      <div class="sq"></div>
+      <div class="sq">[[koma|a-elephant]]</div>
+      <div class="sq">[[koma|a-lion]]</div>
+      <div class="sq">[[koma|a-giraffe]]</div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <h2>출처</h2>
+  <ul class="notes">
+    <li><b>chess.com 의 기물 이미지는 쓰지 않았습니다.</b> 그쪽 자산은 저작권이 있어 공개 저장소에 재배포할 수 없습니다.</li>
+    <li>여기 쓴 것은 위키백과 표준 체스 세트입니다 — <b>Cburnett</b>, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>. 스톤튼 형태라 chess.com 클래식 세트와 생김새가 사실상 같습니다.</li>
+    <li>기물 형태인 <b>스톤튼 디자인(1849) 자체는 퍼블릭 도메인</b>입니다. 저작권이 걸리는 것은 특정 이미지 파일입니다.</li>
+    <li>CC BY-SA 는 출처를 밝히면 상업적 이용까지 자유롭습니다. 채택하면 README 와 규칙 서랍에 출처를 넣겠습니다.</li>
+  </ul>
+</section>
+
+</div>

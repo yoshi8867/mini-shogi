@@ -26,6 +26,7 @@ cd docs/design && python build.py motion ../../index.html
 | 진영 | 사자 진영 ↔ 호랑이 진영 (왕만 다르고 나머지 4종은 공통) |
 | 기물 크기 | 칸의 84%. 병아리 66%, 기린 90%, 닭 95% |
 | 배치 | 화면에서 4칸 가로 × 3칸 세로. 두 사람이 좌우에 마주 앉는다 |
+| 기물 세트 | 동물 / 체스 먹선 / 체스 실루엣 — 대국 화면 우하단에서 전환 |
 | 한 수 제한 | 30초 |
 
 규칙 전문과 확정 사항은 [`docs/rules.md`](docs/rules.md).
@@ -97,3 +98,12 @@ python build.py motion      # motion.template.html → motion.html
 - 목재 텍스처: [Poly Haven](https://polyhaven.com/textures/wood), CC0
 - 비교용 에셋: [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT), Wikimedia Commons (PD/CC0)
 - 원작: どうぶつしょうぎ — 규칙 키타오 마도카(北尾まどか), 그림 후지타 마이코(藤田麻衣子), 2008
+
+---
+
+## 출처
+
+- 목재 텍스처 — [Poly Haven](https://polyhaven.com/textures/wood), CC0
+- 체스 기물 — [Cburnett](https://commons.wikimedia.org/wiki/User:Cburnett), Wikimedia Commons, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). `tools/fetch-chess-pieces.py` 로 받아 알파 마스크로 변환한다.
+  chess.com 의 기물 이미지는 저작권이 있어 쓰지 않았다.
+- 원작 — どうぶつしょうぎ, 규칙 키타오 마도카 · 그림 후지타 마이코, 2008
