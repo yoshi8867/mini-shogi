@@ -325,7 +325,7 @@ body.set-beast .a-rooster {--src:url(ASSET:pieces-x/rooster.png);--k:.95}
     </div>
     <div class="card">
       <h4>글자도 각자에게 돌립니다</h4>
-      <p>진영 이름, 손패 개수, 남은 시간이 각 플레이어 쪽으로 90도 돌아가 있습니다. 승패 알림과 다시 두기 버튼은 <b>같은 것을 양쪽에 한 벌씩</b> 띄웁니다 — 마주 앉은 게임에서 한쪽만 읽히는 알림은 절반이 못 보는 알림입니다.</p>
+      <p>앉은 자리 이름, 손패 개수, 남은 시간이 각 플레이어 쪽으로 돌아가 있습니다. 승패 알림과 다시 두기 버튼은 <b>같은 것을 양쪽에 한 벌씩</b> 띄웁니다 — 마주 앉은 게임에서 한쪽만 읽히는 알림은 절반이 못 보는 알림입니다.</p>
     </div>
     <div class="card">
       <h4>손패는 바깥쪽에</h4>
@@ -384,7 +384,8 @@ const SCOLS = () => LAND ? ROWS : COLS;
 const SROWS = () => LAND ? COLS : ROWS;
 const ART  = {L:["a-lion","a-tiger"], G:["a-giraffe","a-giraffe"], E:["a-elephant","a-elephant"],
               C:["a-chick","a-chick"], H:["a-rooster","a-rooster"]};
-let NAME, SIDE;                         // 기물 껍데기에 따라 갈린다 — setMode()
+let NAME;                               // 기물 이름은 껍데기에 따라 갈린다 — setMode()
+const SIDE = ["선공", "후공"];           // 앉은 자리는 껍데기와 무관하다
 const STEP = {
   L:[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]],
   G:[[0,-1],[1,0],[0,1],[-1,0]],
@@ -894,7 +895,6 @@ const NAMESET = {
   animal: {L:["사자","호랑이"], G:["기린","기린"], E:["코끼리","코끼리"],
            C:["병아리","병아리"], H:["닭","닭"]}
 };
-const SIDESET = {chess:["선공","후공"], animal:["사자","호랑이"]};
 let mode = "chess";
 /* 판 위와 손패의 모든 기물이 함께 떠올랐다 내려앉고, 꼭대기에서 껍데기가 바뀐다.
    글자로 알리지 않는다 — 기물이 통째로 들썩이면 바뀐 것은 보면 안다. */
@@ -923,12 +923,9 @@ async function relift(apply){
 function setMode(m, quiet){
   const apply = () => {
     mode = m;
-    const fam = m === "chess" ? "chess" : "animal";
-    NAME = NAMESET[fam]; SIDE = SIDESET[fam];
+    NAME = NAMESET[m === "chess" ? "chess" : "animal"];
     document.body.classList.remove("set-chess", "set-beast");
     if (m !== "animal") document.body.classList.add("set-" + m);
-    [0,1].forEach(s => $("#tray" + s + " .nm").textContent =
-      SIDE[s] + (fam === "chess" ? "" : " 진영"));
   };
   if (quiet) apply(); else relift(apply);
 }
