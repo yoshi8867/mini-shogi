@@ -153,12 +153,15 @@ function evalPos(p){
 }
 
 /* ─── 탐색 ─── */
-let nodes=0, deadline=0, stopped=false;
+/* 멈추는 조건이 둘이다. 벽시계와 노드 수.
+   시계만 믿으면 Date.now() 가 안 흐르는 환경에서 영원히 돈다 — 실제로 겪었다. */
+let nodes=0, deadline=0, nodeCap=3e6, stopped=false;
+const TTMAX=800000;                     // Map 한계까지 불리지 않는다
 let TT=new Map();
 const KILL=new Int32Array(80);
 
 function search(p, d, a, b, ply, seen){
-  if ((nodes++ & 1023)===0 && Date.now()>deadline){ stopped=true; return 0; }
+  if ((nodes++ & 1023)===0 && (nodes>nodeCap || Date.now()>deadline)){ stopped=true; return 0; }
   const k=hash(p), e=TT.get(k);
   if (e && e.d>=d){
     if (e.f===0) return e.v;
@@ -195,6 +198,7 @@ function search(p, d, a, b, ply, seen){
     if (v>best){ best=v; bm=m; if (v>a) a=v; }
     if (a>=b){ if (!cap) KILL[ply]=m; break; }
   }
+  if (TT.size > TTMAX) TT.clear();
   TT.set(k, {d, v:best, m:bm, f: best<=a0 ? 2 : best>=b ? 1 : 0});
   return best;
 }
@@ -206,7 +210,8 @@ function best(pos, opt){
   const p = {b: Int8Array.from(pos.b),
              hand: [pos.hand[0].slice(), pos.hand[1].slice()],
              turn: pos.turn};
-  deadline = Date.now()+ms; stopped=false; nodes=0;
+  deadline = Date.now()+ms; nodeCap = opt.nodes || 3e6;
+  stopped=false; nodes=0;
   TT = new Map(); KILL.fill(0);
 
   const root=[], n0=genInto(p, ML[0]);

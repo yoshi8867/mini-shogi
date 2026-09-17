@@ -13,6 +13,16 @@
   --s1:8px; --s2:16px; --s3:28px; --s4:48px; --s5:76px;
   --paper:#efe4cd; --ink:#241a10; --ink-soft:#6f5a41; --rule:#d3c0a0;
   --ground:#e9d8b6;
+  /* 껍데기 세 벌의 그림. 진영마다 따로 걸리므로 여기 한 번만 둔다. */
+  --an-lion:url(ASSET:pieces/lion.png);        --an-tiger:url(ASSET:pieces/tiger.png);
+  --an-giraffe:url(ASSET:pieces/giraffe-a.png);--an-elephant:url(ASSET:pieces/elephant.png);
+  --an-chick:url(ASSET:pieces/chick-b.png);    --an-rooster:url(ASSET:pieces/rooster.png);
+  --bx-lion:url(ASSET:pieces-x/lion.png);        --bx-tiger:url(ASSET:pieces-x/tiger.png);
+  --bx-giraffe:url(ASSET:pieces-x/giraffe-a.png);--bx-elephant:url(ASSET:pieces-x/elephant.png);
+  --bx-chick:url(ASSET:pieces-x/chick-b.png);    --bx-rooster:url(ASSET:pieces-x/rooster.png);
+  --ch-king:url(ASSET:pieces-chess-line/king.png);   --ch-queen:url(ASSET:pieces-chess-line/queen.png);
+  --ch-rook:url(ASSET:pieces-chess-line/rook.png);   --ch-bishop:url(ASSET:pieces-chess-line/bishop.png);
+  --ch-pawn:url(ASSET:pieces-chess-line/pawn.png);
   --lacquer:#5e3f20; --vermilion:#c2412a;
   --koma-me:#f6e7bd; --koma-you:#f2dcbe;
   --sh-p1:polygon(50% 0%,88% 13%,100% 100%,0% 100%,12% 13%);
@@ -179,32 +189,26 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 .tbl td{color:var(--chalk-dim)}
 .tbl code{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--mark)}
 
-.a-lion    {--src:url(ASSET:pieces/lion.png)}
-.a-tiger   {--src:url(ASSET:pieces/tiger.png)}
-.a-giraffe {--src:url(ASSET:pieces/giraffe-a.png);--k:.9}
-.a-elephant{--src:url(ASSET:pieces/elephant.png)}
-.a-chick   {--src:url(ASSET:pieces/chick-b.png);--k:.66}
-.a-rooster {--src:url(ASSET:pieces/rooster.png);--k:.95}
-
-/* ── 기물 세트 · 체스 (Cburnett, CC BY-SA 3.0) ──────────────────────
-   동물 그림보다 한 단계 작게 잡는다. 칸에 여백이 남아야 코마로 읽힌다. */
-body.set-chess{--p-king:url(ASSET:pieces-chess-line/king.png);
-  --p-queen:url(ASSET:pieces-chess-line/queen.png); --p-rook:url(ASSET:pieces-chess-line/rook.png);
-  --p-bishop:url(ASSET:pieces-chess-line/bishop.png); --p-pawn:url(ASSET:pieces-chess-line/pawn.png)}
-body.set-chess .a-lion,
-body.set-chess .a-tiger   {--src:var(--p-king);  --k:.78}
-body.set-chess .a-rooster {--src:var(--p-queen); --k:.74}
-body.set-chess .a-giraffe {--src:var(--p-rook);  --k:.64}
-body.set-chess .a-elephant{--src:var(--p-bishop);--k:.70}
-body.set-chess .a-chick   {--src:var(--p-pawn);  --k:.55}
-
-/* ── 기물 세트 · 야수 (숨은 전환) ── */
-body.set-beast .a-lion    {--src:url(ASSET:pieces-x/lion.png)}
-body.set-beast .a-tiger   {--src:url(ASSET:pieces-x/tiger.png)}
-body.set-beast .a-giraffe {--src:url(ASSET:pieces-x/giraffe-a.png);--k:.9}
-body.set-beast .a-elephant{--src:url(ASSET:pieces-x/elephant.png)}
-body.set-beast .a-chick   {--src:url(ASSET:pieces-x/chick-b.png);--k:.66}
-body.set-beast .a-rooster {--src:url(ASSET:pieces-x/rooster.png);--k:.95}
+/* 껍데기는 코마마다 붙는다(.sk-*). 그래서 진영별로 따로 갈 수 있다. */
+.a-lion    {--src:var(--an-lion)}
+.a-tiger   {--src:var(--an-tiger)}
+.a-giraffe {--src:var(--an-giraffe);--k:.9}
+.a-elephant{--src:var(--an-elephant)}
+.a-chick   {--src:var(--an-chick);--k:.66}
+.a-rooster {--src:var(--an-rooster);--k:.95}
+.sk-beast .a-lion    {--src:var(--bx-lion)}
+.sk-beast .a-tiger   {--src:var(--bx-tiger)}
+.sk-beast .a-giraffe {--src:var(--bx-giraffe)}
+.sk-beast .a-elephant{--src:var(--bx-elephant)}
+.sk-beast .a-chick   {--src:var(--bx-chick)}
+.sk-beast .a-rooster {--src:var(--bx-rooster)}
+/* 체스 (Cburnett, CC BY-SA 3.0) — 동물보다 한 단계 작게. 칸에 여백이 남아야 코마로 읽힌다 */
+.sk-chess .a-lion,
+.sk-chess .a-tiger   {--src:var(--ch-king);  --k:.78}
+.sk-chess .a-rooster {--src:var(--ch-queen); --k:.74}
+.sk-chess .a-giraffe {--src:var(--ch-rook);  --k:.64}
+.sk-chess .a-elephant{--src:var(--ch-bishop);--k:.70}
+.sk-chess .a-chick   {--src:var(--ch-pawn);  --k:.55}
 /* ════ 규칙 서랍 — 구석에 접어두고 누르면 열린다 ════ */
 .wrap>section.block:first-child{margin-top:0}
 .bar{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 12px 9px;min-width:0}
@@ -236,6 +240,7 @@ body.set-beast .a-rooster {--src:url(ASSET:pieces-x/rooster.png);--k:.95}
 .bar>.log{flex:1;min-width:0;margin:0;border-top:0;padding:0;min-height:0;
   color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar>.log b{color:var(--vermilion)}
+body.ai .t1 .clock{display:none}        /* AI 차례에는 시계를 재지 않는다 */
 .rules-drawer{color:var(--chalk)}
 </style>
 
@@ -268,6 +273,7 @@ body.set-beast .a-rooster {--src:url(ASSET:pieces-x/rooster.png);--k:.95}
   <div class="bar">
     <div class="log" id="log">기물을 탭하세요.</div>
     <div class="hud" id="hud">
+      <button class="hud-btn" id="vsBtn" aria-pressed="false">둘이 두기</button>
       <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
       <button class="hud-btn" id="reset">처음으로</button>
       <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
@@ -389,7 +395,7 @@ const SCOLS = () => LAND ? ROWS : COLS;
 const SROWS = () => LAND ? COLS : ROWS;
 const ART  = {L:["a-lion","a-tiger"], G:["a-giraffe","a-giraffe"], E:["a-elephant","a-elephant"],
               C:["a-chick","a-chick"], H:["a-rooster","a-rooster"]};
-let NAME;                               // 기물 이름은 껍데기에 따라 갈린다 — setMode()
+                                        // 기물 이름은 진영별 껍데기를 따른다 — nameOf()
 /* 자리는 고정, 먼저 두는 쪽만 판마다 넘어간다.
    푸는 법이 알려진 게임이라(후수 필승) 한쪽만 계속 선공이면 공평하지 않다. */
 let first = 0;
@@ -447,14 +453,7 @@ function emptyCells(){
 /* 드롭으로는 사자를 잡을 수 없으므로 판 위 기물만 본다 — 엔진도 같다 */
 const attacked = (r, c, bySide) => EG.attacked(snapshot(bySide), r*COLS + c, bySide);
 const hasAnyMove = side => EG.gen(snapshot(side)).length > 0;
-function posKey(){
-  let k = "";
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
-    const p = cells[r][c]; k += p ? p.t + p.s : "..";
-  }
-  return k + "|" + hand[0].map(p => p.t).sort().join("")
-           + "|" + hand[1].map(p => p.t).sort().join("") + "|" + turn;
-}
+const posKey = () => EG.hash(snapshot());   // 판 + 양쪽 손패 + 차례
 
 /* ═══ 소리 ═══ */
 let AC = null, master = null;
@@ -514,6 +513,7 @@ function clockShow(){
 function clockStop(){ if (tid){ clearInterval(tid); tid = null; } }
 function clockStart(){
   clockStop();
+  if (vs === "ai" && turn === AI) return;   // AI 를 재촉하지 않는다
   if (!limit() || over){ [0,1].forEach(i => $("#clk"+i).style.display = limit() ? "" : "none"); return; }
   [0,1].forEach(i => $("#clk"+i).style.display = "");
   left = limit(); lastTick = -1; clockShow();
@@ -615,6 +615,7 @@ function build(p){
   el.innerHTML = `<div class="face"></div><div class="ring"></div>
     <div class="box"><i class="art ${ART[p.t][p.s]}"></i>${dirs}</div>`;
   el.classList.toggle("you-koma", p.s === 1);
+  el.classList.add("sk-" + skin[p.s]);
   el.addEventListener("pointerdown", e => onGrab(e, p));
   el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(p); } });
   layer.appendChild(el); p.el = el; return el;
@@ -629,6 +630,8 @@ function refreshArt(p){
     box.appendChild(i);
   });
   p.el.classList.toggle("you-koma", p.s === 1);
+  p.el.classList.remove("sk-chess","sk-animal","sk-beast");
+  p.el.classList.add("sk-" + skin[p.s]);     // 잡히면 주인이 바뀌니 껍데기도 따라간다
 }
 
 /* ═══ 애니메이션 ═══ */
@@ -722,10 +725,10 @@ function pick(p){
   if (r < 0){
     const spots = emptyCells();
     showDropHints(p, spots);
-    log.textContent = `손패의 ${NAME[p.t][p.s]} · 놓을 수 있는 칸 ${spots.length}곳`;
+    log.textContent = `손패의 ${nameOf(p)} · 놓을 수 있는 칸 ${spots.length}곳`;
   } else {
     showHints(r,c);
-    log.textContent = `${NAME[p.t][p.s]} · 갈 수 있는 칸 ${movesOf(r,c).length}곳`;
+    log.textContent = `${nameOf(p)} · 갈 수 있는 칸 ${movesOf(r,c).length}곳`;
   }
 }
 function deselect(){ if (sel) sel.el.classList.remove("sel"); sel = null; clearHints(); }
@@ -747,7 +750,7 @@ async function doMove(r, c, mv, dragged){
   const lionTaken = victim && victim.t === "L";
 
   if (victim){
-    log.innerHTML = `<b>${NAME[p.t][p.s]}</b>(으)로 ${NAME[victim.t][victim.s]} 잡음`;
+    log.innerHTML = `<b>${nameOf(p)}</b>(으)로 ${nameOf(victim)} 잡음`;
     tick();
     await animate(victim.el, [{transform:tf(victim.el._t)},
       {transform:tf({...victim.el._t, s:1.12})}], 110);
@@ -760,7 +763,7 @@ async function doMove(r, c, mv, dragged){
     await hop(p.el, dest, {ms:300}); tak();
   } else {
     cells[r][c] = null; cells[mv.r][mv.c] = p;
-    log.innerHTML = `<b>${NAME[p.t][p.s]}</b> 이동 · ${dragged ? "밀기" : "들었다 놓기"}`;
+    log.innerHTML = `<b>${nameOf(p)}</b> 이동 · ${dragged ? "밀기" : "들었다 놓기"}`;
     if (dragged){ await slide(p.el, dest, 260); knock({gain:.45}); }
     else { await hop(p.el, dest, {ms:300}); tak(); }
   }
@@ -792,7 +795,7 @@ async function doDrop(p, r, c, dragged){
   hand[at[0]].splice(at[1], 1);
   cells[r][c] = p;
   const dest = sqPos(r, c, p.s);
-  log.innerHTML = `손패의 <b>${NAME[p.t][p.s]}</b> 놓음 · ${dragged ? "밀기" : "들었다 놓기"}`;
+  log.innerHTML = `손패의 <b>${nameOf(p)}</b> 놓음 · ${dragged ? "밀기" : "들었다 놓기"}`;
   if (dragged){ await slide(p.el, dest, 260); knock({gain:.45}); }
   else { await hop(p.el, dest, {lift:.13, ms:340}); tak(); }
   relayoutHand(at[0]);
@@ -808,6 +811,7 @@ function endTurn(){
   if (!hasAnyMove(turn)){ finish(1 - turn); return; }  // 둘 수 있는 수가 없다
   busy = false;
   clockStart();
+  maybeAI();
 }
 function updateTurn(){
   $("#tray0").classList.toggle("on", turn === 0 && !over);
@@ -885,6 +889,7 @@ function render(){
     if (p){ build(p); place(p.el, sqPos(r,c,p.s), true); }
   }
   [0,1].forEach(s => $("#tray" + s + " .nm").textContent = SIDE(s));
+  paintSkins();
   updateTurn(); updateCounts(); measure();
   seen.set(posKey(), 1);
 }
@@ -894,11 +899,12 @@ function start(){
     const n = EG.gen(snapshot()).length;
     if (n !== 4) console.warn("스냅샷이 엔진과 어긋난다: 합법수 " + n);
   }, 0);
-  clockStop();
+  clockStop(); era++;                   // 세대를 올려 묵은 AI 답을 버린다
   if (cells) first = 1 - first;         // 첫 판만 그대로, 다음 판부터 번갈아
   freshGame(); render();
   log.textContent = "기물을 탭하세요.";
   clockStart();
+  maybeAI();
 }
 
 stage.addEventListener("pointerdown", e => {
@@ -917,15 +923,15 @@ const NAMESET = {
   animal: {L:["사자","호랑이"], G:["기린","기린"], E:["코끼리","코끼리"],
            C:["병아리","병아리"], H:["닭","닭"]}
 };
-let mode = "chess";
 /* 판 위와 손패의 모든 기물이 함께 떠올랐다 내려앉고, 꼭대기에서 껍데기가 바뀐다.
    글자로 알리지 않는다 — 기물이 통째로 들썩이면 바뀐 것은 보면 안다. */
 const LIFT_MS = 520;
-async function relift(apply){
-  const all = [];
+async function relift(apply, side){
+  let all = [];
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
     if (cells[r][c]) all.push(cells[r][c]);
   hand.forEach(h => h.forEach(p => all.push(p)));
+  if (side !== undefined) all = all.filter(p => p.s === side);   // 그 진영만 들썩인다
   if (busy || !all.length){ apply(); return; }   // 연출이 겹치면 그냥 바꾼다
   busy = true;
   tick();
@@ -941,15 +947,24 @@ async function relift(apply){
   await wait(LIFT_MS * .54);
   tak();
   busy = false;
+  maybeAI();
 }
-function setMode(m, quiet){
+let skin = ["chess","chess"], wasSkin = ["chess","chess"];
+const nameOf = p => NAMESET[skin[p.s] === "chess" ? "chess" : "animal"][p.t][p.s];
+function paintSkins(){
+  const put = p => { p.el.classList.remove("sk-chess","sk-animal","sk-beast");
+                     p.el.classList.add("sk-" + skin[p.s]); };
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+    if (cells[r][c] && cells[r][c].el) put(cells[r][c]);
+  hand.forEach(hh => hh.forEach(put));
+}
+function setSkin(side, s, quiet){
   const apply = () => {
-    mode = m;
-    NAME = NAMESET[m === "chess" ? "chess" : "animal"];
-    document.body.classList.remove("set-chess", "set-beast");
-    if (m !== "animal") document.body.classList.add("set-" + m);
+    if (s !== "beast") wasSkin[side] = s;
+    skin[side] = s;
+    paintSkins();
   };
-  if (quiet) apply(); else relift(apply);
+  if (quiet) apply(); else relift(apply, side);
 }
 /* 0.6초 안쪽 간격으로 같은 기물을 일곱 번. 보통 대국에서는 나오지 않는 속도다. */
 let tapP = null, tapN = 0, tapAt = 0;
@@ -959,9 +974,71 @@ function secretTap(p){
   tapAt = now;
   if (++tapN < 7) return;
   tapN = 0;
-  if (p.t === "L") setMode(mode === "chess" ? "animal" : "chess");
-  else if (p.t === "C" && mode !== "chess") setMode(mode === "beast" ? "animal" : "beast");
+  const s = p.s;                          // 두드린 기물의 주인 쪽만 바뀐다
+  if (p.t === "L") setSkin(s, skin[s] === "chess" ? "animal" : "chess");
+  else if (p.t === "C") setSkin(s, skin[s] === "beast" ? wasSkin[s] : "beast");
 }
+
+/* ═══ 혼자 두기 ═══
+   AI 는 늘 위(가로면 왼쪽) 자리다. 세기는 껍데기가 정한다 —
+   AI 쪽이 야수면 어려움, 아니면 보통. 난이도 버튼을 따로 두지 않는다. */
+const AI = 1;
+let vs = "human", worker = null, thinking = false, era = 0, askedAt = 0, watch = 0;
+const aiHard = () => skin[AI] === "beast";
+function engine(){
+  if (worker !== null) return worker;
+  try {
+    const src = "self.ENGINE=" + ENGINE.toString() + ";const EG=ENGINE();"
+      + "self.onmessage=e=>self.postMessage(EG.best(e.data,e.data));";
+    worker = new Worker(URL.createObjectURL(new Blob([src], {type:"application/javascript"})));
+    worker.onmessage = e => reply(e.data);
+    worker.onerror = () => { worker = false; };   // 죽으면 다음 수부터 메인에서
+  } catch (err){ worker = false; }        // 워커를 못 띄우면 메인에서 돈다
+  return worker;
+}
+function maybeAI(){
+  if (vs !== "ai" || over || busy || thinking || turn !== AI) return;
+  const pos = snapshot(AI);
+  const req = {b: Array.from(pos.b), hand: pos.hand, turn: AI,
+               ms: aiHard() ? 900 : 220, margin: aiHard() ? 0 : 110,
+               past: [...seen].filter(e => e[1] >= 2).map(e => e[0])};
+  thinking = true; askedAt = performance.now(); era++;
+  const w = engine();
+  clearTimeout(watch);
+  if (w){
+    w.postMessage(req);
+    /* 워커가 말이 없으면 메인에서 다시 센다. 답 없는 AI 보다는 끊기는 편이 낫다. */
+    watch = setTimeout(() => { worker = false; reply(EG.best(req, req)); }, req.ms + 2000);
+  }
+  else setTimeout(() => reply(EG.best(req, req)), 0);
+}
+function reply(r){
+  if (!thinking) return;                  // 늦게 온 답은 버린다
+  thinking = false; clearTimeout(watch);
+  const mine = era;
+  if (!r || !r.move) return;
+  /* 즉답은 기계 같다. 생각한 시간이 짧으면 조금 붙잡아 둔다. */
+  const delay = Math.max(0, 380 - (performance.now() - askedAt));
+  setTimeout(() => {
+    if (mine !== era || vs !== "ai" || over || busy || turn !== AI) return;
+    const m = r.move, to = EG.to(m), tr = (to/COLS)|0, tc = to%COLS;
+    if (EG.drop(m)){
+      const p = hand[AI].find(q => q.t === TCHR[EG.drop(m)]);
+      if (p) doDrop(p, tr, tc);
+    } else {
+      const f = EG.from(m), fr = (f/COLS)|0, fc = f%COLS;
+      const mv = movesOf(fr, fc).find(x => x.r === tr && x.c === tc);
+      if (mv) doMove(fr, fc, mv);
+    }
+  }, delay);
+}
+$("#vsBtn").addEventListener("click", e => {
+  vs = vs === "ai" ? "human" : "ai";
+  document.body.classList.toggle("ai", vs === "ai");
+  e.currentTarget.setAttribute("aria-pressed", String(vs === "ai"));
+  e.currentTarget.textContent = vs === "ai" ? "혼자 두기" : "둘이 두기";
+  start();
+});
 /* 화면 비율이 배치를 정한다 */
 function applyOrient(){
   LAND = innerWidth >= innerHeight;
@@ -977,7 +1054,6 @@ addEventListener("resize", applyOrient);
 addEventListener("orientationchange", () => setTimeout(applyOrient, 80));
 if (window.ResizeObserver){ const ro = new ResizeObserver(() => measure()); ro.observe(stage); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
-setMode("chess", true);
 applyOrient();
 start();
 applyBoardWood();
