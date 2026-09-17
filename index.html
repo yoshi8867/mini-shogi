@@ -519,7 +519,7 @@ function clockStart(){
     clockShow();
     if (left <= 0){
       clockStop();
-      finish(SIDE[1 - turn] + " 승리", "시간 초과");
+      finish(1 - turn);                      // 시간 초과
     }
   }, 100);
 }
@@ -649,14 +649,20 @@ function say(msg, why, hold){
   banner.classList.add("on");
   if (hold) setTimeout(() => { if (!over) banner.classList.remove("on"); }, hold/speed());
 }
-function finish(msg, why, draw){
+/* 알림은 두 벌이고 각각 한 사람을 보고 있다. 같은 말을 두 번 띄울 게 아니라
+   이긴 쪽에는 `승리`, 진 쪽에는 `패배` 를 보여준다. 이유는 적지 않는다. */
+function finish(winner){                 // winner: 0 | 1 | null(무승부)
   over = true; busy = false;
   clockStop(); deselect();
-  banner.classList.toggle("draw", !!draw);
-  banner.classList.add("end");
-  say(msg, why, 0);
+  const draw = winner === null;
+  banner.classList.toggle("draw", draw);
+  banner.classList.add("end", "on");
+  const word = s => draw ? "무승부" : s === winner ? "승리" : "패배";
+  banner.querySelector(".bmsg.a .txt").textContent = word(0);
+  banner.querySelector(".bmsg.b .txt").textContent = word(1);
+  banner.querySelectorAll(".why").forEach(e => e.textContent = "");
   document.querySelectorAll(".tray").forEach(t => t.classList.remove("on"));
-  log.innerHTML = `<b>${msg}</b> — ${why}`;
+  log.innerHTML = draw ? "<b>무승부</b>" : `<b>${SIDE[winner]} 승리</b>`;
 }
 
 /* ═══ 착수 지점 ═══ */
@@ -751,7 +757,7 @@ async function doMove(r, c, mv, dragged){
     else { await hop(p.el, dest, {ms:300}); tak(); }
   }
   if (over) return;
-  if (lionTaken){ finish(SIDE[p.s] + " 승리", "상대 사자를 잡음"); return; }
+  if (lionTaken){ finish(p.s); return; }              // 캐치
 
   if (p.t === "C" && mv.r === backRank(p.s)){          // 승격 — 강제
     await wait(120);
@@ -762,7 +768,7 @@ async function doMove(r, c, mv, dragged){
     await wait(320);
   }
   if (p.t === "L" && mv.r === backRank(p.s)){          // 트라이
-    if (!attacked(mv.r, mv.c, 1 - p.s)){ finish(SIDE[p.s] + " 승리", "트라이 성공"); return; }
+    if (!attacked(mv.r, mv.c, 1 - p.s)){ finish(p.s); return; }   // 트라이
     say("트라이 실패", "잡히는 자리", 1100);
     log.innerHTML += " · <b>끝줄 도달했으나 공격받는 칸</b>";
     await wait(600);
@@ -789,9 +795,9 @@ function endTurn(){
   turn = 1 - turn; updateTurn();
   const k = posKey(), n = (seen.get(k) || 0) + 1;
   seen.set(k, n);
-  if (n >= 3){ finish("무승부", "같은 국면 3회", true); return; }
+  if (n >= 3){ finish(null); return; }                // 같은 국면 3회
   if (n === 2) log.innerHTML += " · <b>같은 국면 2회째</b>";
-  if (!hasAnyMove(turn)){ finish(SIDE[1 - turn] + " 승리", "상대가 둘 수 없음"); return; }
+  if (!hasAnyMove(turn)){ finish(1 - turn); return; }  // 둘 수 있는 수가 없다
   busy = false;
   clockStart();
 }
