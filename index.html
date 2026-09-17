@@ -385,7 +385,10 @@ const SROWS = () => LAND ? COLS : ROWS;
 const ART  = {L:["a-lion","a-tiger"], G:["a-giraffe","a-giraffe"], E:["a-elephant","a-elephant"],
               C:["a-chick","a-chick"], H:["a-rooster","a-rooster"]};
 let NAME;                               // 기물 이름은 껍데기에 따라 갈린다 — setMode()
-const SIDE = ["선공", "후공"];           // 앉은 자리는 껍데기와 무관하다
+/* 자리는 고정, 먼저 두는 쪽만 판마다 넘어간다.
+   푸는 법이 알려진 게임이라(후수 필승) 한쪽만 계속 선공이면 공평하지 않다. */
+let first = 0;
+const SIDE = s => s === first ? "선공" : "후공";
 const STEP = {
   L:[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]],
   G:[[0,-1],[1,0],[0,1],[-1,0]],
@@ -404,7 +407,7 @@ function freshGame(){
   const put = (r,c,t,s) => cells[r][c] = {t, s, el:null};
   put(0,0,"G",1); put(0,1,"L",1); put(0,2,"E",1); put(1,1,"C",1);
   put(2,1,"C",0); put(3,0,"E",0); put(3,1,"L",0); put(3,2,"G",0);
-  hand = [[],[]]; turn = 0; sel = null; busy = false; over = false; seen = new Map();
+  hand = [[],[]]; turn = first; sel = null; busy = false; over = false; seen = new Map();
 }
 const steps = p => STEP[p.t].map(([dx,dy]) => p.s === 0 ? [dx,dy] : [-dx,-dy]);
 function movesOf(r,c){
@@ -662,7 +665,7 @@ function finish(winner){                 // winner: 0 | 1 | null(무승부)
   banner.querySelector(".bmsg.b .txt").textContent = word(1);
   banner.querySelectorAll(".why").forEach(e => e.textContent = "");
   document.querySelectorAll(".tray").forEach(t => t.classList.remove("on"));
-  log.innerHTML = draw ? "<b>무승부</b>" : `<b>${SIDE[winner]} 승리</b>`;
+  log.innerHTML = draw ? "<b>무승부</b>" : `<b>${SIDE(winner)} 승리</b>`;
 }
 
 /* ═══ 착수 지점 ═══ */
@@ -876,11 +879,14 @@ function render(){
     const p = cells[r][c];
     if (p){ build(p); place(p.el, sqPos(r,c,p.s), true); }
   }
+  [0,1].forEach(s => $("#tray" + s + " .nm").textContent = SIDE(s));
   updateTurn(); updateCounts(); measure();
   seen.set(posKey(), 1);
 }
 function start(){
-  clockStop(); freshGame(); render();
+  clockStop();
+  if (cells) first = 1 - first;         // 첫 판만 그대로, 다음 판부터 번갈아
+  freshGame(); render();
   log.textContent = "기물을 탭하세요.";
   clockStart();
 }
