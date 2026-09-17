@@ -78,9 +78,6 @@ body.portrait .grid{grid-template-columns:repeat(3,1fr);grid-template-rows:repea
 .sqr{position:relative;background-color:var(--bdbase,#e6cd9d);
   background-image:var(--bdtex,var(--t-maple));background-size:400% 300%;
   background-repeat:no-repeat;background-blend-mode:var(--bdblend,multiply)}
-.sqr.thud::after{content:"";position:absolute;inset:0;background:rgba(90,60,25,.3);
-  animation:thud .26s ease-out forwards}
-@keyframes thud{from{opacity:.55;transform:scale(.86)}to{opacity:0;transform:scale(1)}}
 
 .pieces{position:absolute;inset:0;pointer-events:none;z-index:20}
 .hints{position:absolute;inset:0;pointer-events:none;z-index:30}
@@ -88,6 +85,8 @@ body.portrait .grid{grid-template-columns:repeat(3,1fr);grid-template-rows:repea
   will-change:transform;touch-action:none;transform-origin:50% 50%;
   filter:drop-shadow(0 2px 1.5px rgba(60,35,10,.45))}
 .pc.lifted{filter:drop-shadow(0 8px 7px rgba(60,35,10,.45));z-index:40}
+/* 손에 쥔 것은 판 위 어느 기물보다도 위에 있어야 한다 */
+.pc.drag{filter:drop-shadow(0 13px 11px rgba(60,35,10,.5));z-index:50}
 .pc.sel .ring{opacity:1}
 .face{position:absolute;inset:0;clip-path:var(--sh-p1);
   background-color:var(--koma-bg,var(--koma-me));
@@ -189,18 +188,15 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 
 /* ── 기물 세트 · 체스 (Cburnett, CC BY-SA 3.0) ──────────────────────
    동물 그림보다 한 단계 작게 잡는다. 칸에 여백이 남아야 코마로 읽힌다. */
-body.set-line{--p-king:url(ASSET:pieces-chess-line/king.png);
+body.set-chess{--p-king:url(ASSET:pieces-chess-line/king.png);
   --p-queen:url(ASSET:pieces-chess-line/queen.png); --p-rook:url(ASSET:pieces-chess-line/rook.png);
   --p-bishop:url(ASSET:pieces-chess-line/bishop.png); --p-pawn:url(ASSET:pieces-chess-line/pawn.png)}
-body.set-solid{--p-king:url(ASSET:pieces-chess/king.png);
-  --p-queen:url(ASSET:pieces-chess/queen.png); --p-rook:url(ASSET:pieces-chess/rook.png);
-  --p-bishop:url(ASSET:pieces-chess/bishop.png); --p-pawn:url(ASSET:pieces-chess/pawn.png)}
-body.set-line .a-lion,    body.set-solid .a-lion,
-body.set-line .a-tiger,   body.set-solid .a-tiger   {--src:var(--p-king);  --k:.78}
-body.set-line .a-rooster, body.set-solid .a-rooster {--src:var(--p-queen); --k:.74}
-body.set-line .a-giraffe, body.set-solid .a-giraffe {--src:var(--p-rook);  --k:.64}
-body.set-line .a-elephant,body.set-solid .a-elephant{--src:var(--p-bishop);--k:.70}
-body.set-line .a-chick,   body.set-solid .a-chick   {--src:var(--p-pawn);  --k:.55}
+body.set-chess .a-lion,
+body.set-chess .a-tiger   {--src:var(--p-king);  --k:.78}
+body.set-chess .a-rooster {--src:var(--p-queen); --k:.74}
+body.set-chess .a-giraffe {--src:var(--p-rook);  --k:.64}
+body.set-chess .a-elephant{--src:var(--p-bishop);--k:.70}
+body.set-chess .a-chick   {--src:var(--p-pawn);  --k:.55}
 
 /* ── 기물 세트 · 야수 (숨은 전환) ── */
 body.set-beast .a-lion    {--src:url(ASSET:pieces-x/lion.png)}
@@ -272,7 +268,6 @@ body.set-beast .a-rooster {--src:url(ASSET:pieces-x/rooster.png);--k:.95}
   <div class="bar">
     <div class="log" id="log">기물을 탭하세요.</div>
     <div class="hud" id="hud">
-      <button class="hud-btn" id="setBtn">기물 · 먹선</button>
       <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
       <button class="hud-btn" id="reset">처음으로</button>
       <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
@@ -669,11 +664,6 @@ async function slide(el, to, ms = 300){
   place(el, to, true);
   await animate(el, [{transform:tf(from)},{transform:tf(to)}], ms, "cubic-bezier(.35,.1,.25,1)");
 }
-function thud(r, c){
-  const {sc, sr} = scr(r,c);
-  const sq = grid.children[sr*SCOLS() + sc];
-  sq.classList.remove("thud"); void sq.offsetWidth; sq.classList.add("thud");
-}
 function say(msg, why, hold){
   banner.querySelectorAll(".txt").forEach(b => b.textContent = msg);
   banner.querySelectorAll(".why").forEach(b => b.textContent = why || "");
@@ -777,7 +767,7 @@ async function doMove(r, c, mv, dragged){
       victim.el.classList.remove("lifted");
       await wait(60);
       cells[r][c] = null; cells[mv.r][mv.c] = p;
-      await hop(p.el, dest, {ms:300}); tak(); thud(mv.r, mv.c);
+      await hop(p.el, dest, {ms:300}); tak();
     } else if (mode === "push"){
       fricStart(); fricSet(.85);
       cells[r][c] = null; cells[mv.r][mv.c] = p;
@@ -787,7 +777,7 @@ async function doMove(r, c, mv, dragged){
         slide(p.el, dest, 330),
         (async () => { await slide(victim.el, shoved, 200); await toHand(victim, p.s, mode); })()
       ]);
-      fricStop(); tak(); thud(mv.r, mv.c);
+      fricStop(); tak();
     } else {
       cells[mv.r][mv.c] = null;
       const v = victim.el._t;
@@ -798,7 +788,7 @@ async function doMove(r, c, mv, dragged){
       tick(); await wait(90);
       await toHand(victim, p.s, mode);
       cells[r][c] = null; cells[mv.r][mv.c] = p;
-      await hop(p.el, dest, {ms:290}); tak(); thud(mv.r, mv.c);
+      await hop(p.el, dest, {ms:290}); tak();
     }
   } else {
     cells[r][c] = null; cells[mv.r][mv.c] = p;
@@ -806,9 +796,9 @@ async function doMove(r, c, mv, dragged){
     if (dragged){
       fricStart(); fricSet(.8);
       await slide(p.el, dest, 260);
-      fricStop(); knock({gain:.45}); thud(mv.r, mv.c);
+      fricStop(); knock({gain:.45});
     } else {
-      await hop(p.el, dest, {ms:300}); tak(); thud(mv.r, mv.c);
+      await hop(p.el, dest, {ms:300}); tak();
     }
   }
   if (over) return;
@@ -847,7 +837,7 @@ async function doDrop(p, r, c, dragged){
   } else {
     await hop(p.el, dest, {lift:.13, ms:340}); tak();
   }
-  thud(r, c); relayoutHand(at[0]);
+  relayoutHand(at[0]);
   if (over) return;
   endTurn();                                  // 드롭한 병아리는 승격하지 않는다
 }
@@ -889,7 +879,7 @@ function onDrag(e){
   const v = Math.hypot(dx, dy) / dt;
   drag.px = e.clientX; drag.py = e.clientY; drag.t = now;
   if (!drag.moved && Math.hypot(dx, dy) < 3) return;
-  if (!drag.moved){ drag.moved = true; fricStart(); clearHints(); }
+  if (!drag.moved){ drag.moved = true; drag.p.el.classList.add("drag"); fricStart(); clearHints(); }
   const t = drag.p.el._t;
   place(drag.p.el, {...t, x:t.x+dx, y:t.y+dy, s:1}, true);
   fricSet(Math.min(1, v * 1.7));
@@ -902,6 +892,7 @@ async function onDrop(e){
   d.p.el.removeEventListener("pointercancel", onDrop);
   if (!d.moved) return;
   fricSet(0);
+  const unlift = () => d.p.el.classList.remove("drag");
   const cx = d.p.el._t.x + ew()/2, cy = d.p.el._t.y + eh()/2;
   const sc  = Math.round((cx - bx - cw/2) / (cw + GAP));
   const srw = Math.round((cy - by - ch/2) / (ch + GAP));
@@ -910,8 +901,10 @@ async function onDrop(e){
   if (target){
     if (d.fromHand) await doDrop(d.p, target.r, target.c, true);
     else await doMove(d.r, d.c, target, true);
+    unlift();
   } else {
     await slide(d.p.el, d.start, 180);
+    unlift();
     fricStop(); knock({gain:.2, pitch:1.6});
     if (!over){ if (d.fromHand) showDropHints(d.p); else showHints(d.r, d.c); }
   }
@@ -964,7 +957,7 @@ const NAMESET = {
            C:["병아리","병아리"], H:["닭","닭"]}
 };
 const SIDESET = {chess:["선공","후공"], animal:["사자","호랑이"]};
-let mode = "chess", chessStyle = "set-line";
+let mode = "chess";
 /* 판 위와 손패의 모든 기물이 함께 떠올랐다 내려앉고, 꼭대기에서 껍데기가 바뀐다.
    글자로 알리지 않는다 — 기물이 통째로 들썩이면 바뀐 것은 보면 안다. */
 const LIFT_MS = 520;
@@ -994,14 +987,10 @@ function setMode(m, quiet){
     mode = m;
     const fam = m === "chess" ? "chess" : "animal";
     NAME = NAMESET[fam]; SIDE = SIDESET[fam];
-    document.body.classList.remove("set-line", "set-solid", "set-beast");
-    if (m === "chess") document.body.classList.add(chessStyle);
-    else if (m === "beast") document.body.classList.add("set-beast");
+    document.body.classList.remove("set-chess", "set-beast");
+    if (m !== "animal") document.body.classList.add("set-" + m);
     [0,1].forEach(s => $("#tray" + s + " .nm").textContent =
       SIDE[s] + (fam === "chess" ? "" : " 진영"));
-    const b = $("#setBtn");
-    b.hidden = m !== "chess";
-    b.textContent = "기물 · " + (chessStyle === "set-line" ? "먹선" : "실루엣");
   };
   if (quiet) apply(); else relift(apply);
 }
@@ -1016,10 +1005,6 @@ function secretTap(p){
   if (p.t === "L") setMode(mode === "chess" ? "animal" : "chess");
   else if (p.t === "C" && mode !== "chess") setMode(mode === "beast" ? "animal" : "beast");
 }
-$("#setBtn").addEventListener("click", () => {
-  chessStyle = chessStyle === "set-line" ? "set-solid" : "set-line";
-  setMode("chess");
-});
 /* 화면 비율이 배치를 정한다 */
 function applyOrient(){
   LAND = innerWidth >= innerHeight;
