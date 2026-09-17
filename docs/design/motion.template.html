@@ -26,7 +26,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--wall);color:var(--chalk);
   font-family:'Gothic A1',system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1180px;margin:0 auto;padding:var(--s4) var(--s3) var(--s5)}
+.wrap{max-width:1180px;margin:0 auto;padding:var(--s3)}
 .masthead{border-bottom:1px solid var(--wall-line);padding-bottom:var(--s3);margin-bottom:var(--s4)}
 .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--mark);
   font-weight:700;margin:0 0 var(--s2)}
@@ -38,8 +38,11 @@ section.block{margin-top:var(--s5)}
 .block>.lede{margin:0 0 var(--s3);max-width:68ch;color:var(--chalk-dim);font-size:14.5px}
 
 /* ════ 대국 화면 ════ */
-.play{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(232px,.8fr);gap:var(--s3);align-items:start}
-@media (max-width:900px){.play{grid-template-columns:1fr}}
+/* 판 하나가 화면을 채우되, 세로로 넘치지 않게 가둔다.
+   .screen 이 16:10 이므로 남는 높이 x 1.6 이 태블릿의 최대 너비. */
+.play{display:block}
+.tablet{max-width:min(100%, calc((100vh - 132px) * 1.6));margin:0 auto}
+@supports (height:100dvh){.tablet{max-width:min(100%, calc((100dvh - 132px) * 1.6))}}
 .tablet{background:#0b0b0c;border-radius:20px;padding:11px;box-shadow:0 18px 44px rgba(0,0,0,.4)}
 .screen{aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:#e9d8b6;padding:2.2%}
 .stage{position:relative;width:100%;height:100%;
@@ -181,10 +184,14 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 .a-rooster {--src:url(ASSET:pieces/rooster.png);--k:.95}
 /* ════ 규칙 서랍 — 구석에 접어두고 누르면 열린다 ════ */
 .wrap>section.block:first-child{margin-top:0}
-.rules-fab{position:fixed;right:20px;bottom:20px;z-index:40;border:0;cursor:pointer;
-  font:700 14px/1 'Gothic A1',system-ui,sans-serif;color:#17181a;background:var(--mark);
-  border-radius:999px;padding:14px 22px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
-.rules-fab:hover{background:#e9d494}
+.hud{position:fixed;right:20px;bottom:20px;z-index:40;display:flex;gap:8px;align-items:center}
+.hud-btn{border:1px solid var(--wall-line);cursor:pointer;background:var(--wall-2);color:var(--chalk-dim);
+  font:700 13px/1 'Gothic A1',system-ui,sans-serif;border-radius:999px;padding:12px 18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.hud-btn:hover{color:var(--chalk);border-color:var(--chalk-dim)}
+.hud-btn[aria-pressed=false]{color:#6a6762}
+.hud-btn.primary{background:var(--mark);border-color:var(--mark);color:#17181a;font-size:14px;padding:13px 22px}
+.hud-btn.primary:hover{background:#e9d494;color:#17181a}
 .rules-scrim{position:fixed;inset:0;z-index:41;background:rgba(0,0,0,.55)}
 .rules-drawer{position:fixed;top:0;right:0;bottom:0;z-index:42;width:min(580px,94vw);
   background:var(--wall-2);border-left:1px solid var(--wall-line);overflow-y:auto;
@@ -200,7 +207,12 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 .rules-body .block{margin-top:var(--s4)}
 .rules-body .block:first-child{margin-top:var(--s2)}
 .rules-body a{color:var(--mark)}
-@media (max-width:560px){.rules-fab{right:12px;bottom:12px;padding:12px 18px}}
+@media (max-width:560px){.hud{right:12px;bottom:12px;gap:6px}
+  .hud-btn{padding:10px 13px;font-size:12px}
+  .hud-btn.primary{padding:11px 16px;font-size:13px}}
+.play>.log{border-top:1px solid var(--wall-line);color:var(--chalk-dim);
+  min-height:0;text-align:center;padding-top:12px}
+.play>.log b{color:var(--mark)}
 </style>
 
 <div class="wrap">
@@ -233,51 +245,17 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
       </div>
     </div></div></div>
 
-    <div class="panel">
-      <section>
-        <h3>잡기 연출</h3>
-        <div class="opt">
-          <label><input type="radio" name="cap" value="lift" checked><span>들어내기<small>적 기물을 먼저 들어 손패로 보내고, 그 자리에 내 기물이 내려앉습니다.</small></span></label>
-          <label><input type="radio" name="cap" value="push"><span>밀어내기<small>내 기물이 밀고 들어가며 적 기물을 같은 방향으로 밀어냅니다.</small></span></label>
-          <label><input type="radio" name="cap" value="flip"><span>뒤집기<small>적 기물이 제자리에서 뒤집혀 내 것이 된 뒤 손패로 갑니다.</small></span></label>
-        </div>
-      </section>
-      <section>
-        <h3>판 나뭇결</h3>
-        <div class="row"><select id="bdw">
-          <option value="maple">흰단풍</option><option value="cherry">벚나무</option>
-          <option value="okoume">오쿠메</option><option value="ash">물푸레</option>
-          <option value="whiteoak">백참나무</option><option value="oak">참나무</option>
-          <option value="fine">호두나무</option>
-        </select></div>
-        <div class="row" style="margin-top:8px">
-          <label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="radio" name="bdd" value="" checked>세로결</label>
-          <label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="radio" name="bdd" value="90">가로결</label>
-        </div>
-      </section>
-      <section>
-        <h3>한 수 제한</h3>
-        <div class="row"><input type="range" id="lim" min="0" max="120" step="5" value="30"><span><b id="limv">30</b>초</span></div>
-        <small style="display:block;margin-top:6px;color:var(--ink-soft);font-size:11.5px">0으로 내리면 제한 없음.</small>
-      </section>
-      <section>
-        <h3>소리 · 속도</h3>
-        <div class="row"><label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" id="snd" checked>소리</label></div>
-        <div class="row" style="margin-top:8px"><span>음량</span><input type="range" id="vol" min="0" max="100" value="70"></div>
-        <div class="row" style="margin-top:8px"><span>×<b id="spdv">1.0</b></span><input type="range" id="spd" min="30" max="200" value="100"></div>
-      </section>
-      <section>
-        <h3>판</h3>
-        <button id="reset">처음으로</button>
-        <div class="log" id="log">기물을 탭하세요.</div>
-      </section>
-    </div>
+    <div class="log" id="log">기물을 탭하세요.</div>
   </div>
 </section>
 
 </div>
 
-<button class="rules-fab" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
+<div class="hud" id="hud">
+  <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
+  <button class="hud-btn" id="reset">처음으로</button>
+  <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
+</div>
 <div class="rules-scrim" id="rulesScrim" hidden></div>
 <aside class="rules-drawer" id="rulesDrawer" hidden aria-label="규칙과 설계 기록">
   <div class="rules-head">
@@ -452,12 +430,13 @@ function posKey(){
 
 /* ═══ 소리 ═══ */
 let AC = null, master = null, fric = null;
-const snd = () => $("#snd").checked;
+let sndOn = true;
+const snd = () => sndOn;
 function audio(){
   if (AC){ if (AC.state === "suspended") AC.resume(); return AC; }
   AC = new (window.AudioContext || window.webkitAudioContext)();
   master = AC.createGain();
-  master.gain.value = $("#vol").value / 100;
+  master.gain.value = .7;
   master.connect(AC.destination);
   return AC;
 }
@@ -515,7 +494,7 @@ function fricStop(){
 }
 
 /* ═══ 한 수 제한 시간 ═══ */
-const limit = () => +$("#lim").value;
+const limit = () => 30;                 /* 한 수 30초 — 확정 */
 let left = 0, tid = null, lastTick = -1;
 function clockShow(){
   const s = Math.max(0, Math.ceil(left));
@@ -631,7 +610,7 @@ function refreshArt(p){
 }
 
 /* ═══ 애니메이션 ═══ */
-const speed = () => +$("#spd").value / 100;
+const speed = () => 1;                  /* 연출 속도 ×1.0 — 확정 */
 const wait = ms => new Promise(r => setTimeout(r, ms / speed()));
 function animate(el, frames, ms, ease = "cubic-bezier(.3,.8,.35,1)"){
   return el.animate(frames, {duration: ms/speed(), easing: ease, fill:"none"}).finished.catch(() => {});
@@ -742,7 +721,7 @@ async function toHand(victim, captor, mode){
 async function doMove(r, c, mv, dragged){
   if (busy || over) return;
   busy = true; deselect();
-  const p = cells[r][c], mode = document.querySelector("input[name=cap]:checked").value;
+  const p = cells[r][c], mode = "lift";   /* 잡기 연출: 들어내기 — 확정 */
   const victim = mv.take, dest = sqPos(mv.r, mv.c, p.s);
   const lionTaken = victim && victim.t === "L";
 
@@ -901,7 +880,7 @@ async function onDrop(e){
 /* ═══ 판 결 ═══ */
 const BOARDWOOD = {fine:{base:"#7a542c", blend:"normal"}};
 function applyBoardWood(){
-  const k = $("#bdw").value, d = document.querySelector("input[name=bdd]:checked").value;
+  const k = "maple", d = "";            /* 판: 흰단풍 세로결 — 확정 */
   const o = BOARDWOOD[k] || {};
   grid.style.setProperty("--bdtex", `var(--t-${k}${d})`);
   grid.style.setProperty("--bdbase", o.base || "#e6cd9d");
@@ -933,14 +912,11 @@ stage.addEventListener("pointerdown", e => {
 banner.querySelectorAll(".again").forEach(b =>
   b.addEventListener("click", e => { e.stopPropagation(); start(); }));
 $("#reset").addEventListener("click", () => start());
-$("#vol").addEventListener("input", e => { if (master) master.gain.value = e.target.value/100; });
-$("#spd").addEventListener("input", e => { $("#spdv").textContent = (e.target.value/100).toFixed(1); });
-$("#snd").addEventListener("change", e => { if (!e.target.checked) fricStop(); });
-$("#bdw").addEventListener("change", applyBoardWood);
-document.querySelectorAll("input[name=bdd]").forEach(r => r.addEventListener("change", applyBoardWood));
-$("#lim").addEventListener("input", e => {
-  $("#limv").textContent = e.target.value === "0" ? "없음" : e.target.value;
-  if (!over) clockStart();
+$("#sndBtn").addEventListener("click", e => {
+  sndOn = !sndOn;
+  if (!sndOn) fricStop();
+  e.currentTarget.setAttribute("aria-pressed", String(sndOn));
+  e.currentTarget.textContent = sndOn ? "소리 켜짐" : "소리 꺼짐";
 });
 addEventListener("resize", measure);
 if (window.ResizeObserver){ const ro = new ResizeObserver(() => measure()); ro.observe(stage); ro.observe(board); }
@@ -954,9 +930,10 @@ setTimeout(measure, 400);
 <script>
 (() => {
   const fab = document.getElementById("rulesFab"), dr = document.getElementById("rulesDrawer"),
+        hud = document.getElementById("hud"),
         sc  = document.getElementById("rulesScrim"), cl = document.getElementById("rulesClose");
   const show = v => {
-    dr.hidden = !v; sc.hidden = !v; fab.hidden = v;
+    dr.hidden = !v; sc.hidden = !v; hud.hidden = v;
     fab.setAttribute("aria-expanded", String(v));
     if (v) { dr.scrollTop = 0; cl.focus(); } else fab.focus();
   };
