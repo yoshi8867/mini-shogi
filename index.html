@@ -964,24 +964,46 @@ const NAMESET = {
            C:["병아리","병아리"], H:["닭","닭"]}
 };
 const SIDESET = {chess:["선공","후공"], animal:["사자","호랑이"]};
-const MODEMSG = {chess:"체스", animal:"동물", beast:"야수"};
 let mode = "chess", chessStyle = "set-line";
-function setMode(m, quiet){
-  mode = m;
-  const fam = m === "chess" ? "chess" : "animal";
-  NAME = NAMESET[fam]; SIDE = SIDESET[fam];
-  document.body.classList.remove("set-line", "set-solid", "set-beast");
-  if (m === "chess") document.body.classList.add(chessStyle);
-  else if (m === "beast") document.body.classList.add("set-beast");
-  [0,1].forEach(s => $("#tray" + s + " .nm").textContent =
-    SIDE[s] + (fam === "chess" ? "" : " 진영"));
-  const b = $("#setBtn");
-  b.hidden = m !== "chess";
-  b.textContent = "기물 · " + (chessStyle === "set-line" ? "먹선" : "실루엣");
-  if (quiet) return;
+/* 판 위와 손패의 모든 기물이 함께 떠올랐다 내려앉고, 꼭대기에서 껍데기가 바뀐다.
+   글자로 알리지 않는다 — 기물이 통째로 들썩이면 바뀐 것은 보면 안다. */
+const LIFT_MS = 520;
+async function relift(apply){
+  const all = [];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
+    if (cells[r][c]) all.push(cells[r][c]);
+  hand.forEach(h => h.forEach(p => all.push(p)));
+  if (busy || !all.length){ apply(); return; }   // 연출이 겹치면 그냥 바꾼다
+  busy = true;
+  tick();
+  all.forEach(p => {
+    const t = p.el._t, up = {...t, y: t.y - eh()*.34, s: t.s*1.13};
+    p.el.classList.add("lifted");
+    animate(p.el, [{transform:tf(t)}, {transform:tf(up), offset:.38},
+                   {transform:tf(up), offset:.56}, {transform:tf(t)}], LIFT_MS)
+      .then(() => p.el.classList.remove("lifted"));
+  });
+  await wait(LIFT_MS * .46);
+  apply();
+  await wait(LIFT_MS * .54);
   tak();
-  log.innerHTML = `기물 <b>${MODEMSG[m]}</b>`;
-  if (!over) say(MODEMSG[m], "", 1100);
+  busy = false;
+}
+function setMode(m, quiet){
+  const apply = () => {
+    mode = m;
+    const fam = m === "chess" ? "chess" : "animal";
+    NAME = NAMESET[fam]; SIDE = SIDESET[fam];
+    document.body.classList.remove("set-line", "set-solid", "set-beast");
+    if (m === "chess") document.body.classList.add(chessStyle);
+    else if (m === "beast") document.body.classList.add("set-beast");
+    [0,1].forEach(s => $("#tray" + s + " .nm").textContent =
+      SIDE[s] + (fam === "chess" ? "" : " 진영"));
+    const b = $("#setBtn");
+    b.hidden = m !== "chess";
+    b.textContent = "기물 · " + (chessStyle === "set-line" ? "먹선" : "실루엣");
+  };
+  if (quiet) apply(); else relift(apply);
 }
 /* 0.6초 안쪽 간격으로 같은 기물을 일곱 번. 보통 대국에서는 나오지 않는 속도다. */
 let tapP = null, tapN = 0, tapAt = 0;
@@ -996,7 +1018,7 @@ function secretTap(p){
 }
 $("#setBtn").addEventListener("click", () => {
   chessStyle = chessStyle === "set-line" ? "set-solid" : "set-line";
-  setMode("chess", true);
+  setMode("chess");
 });
 /* 화면 비율이 배치를 정한다 */
 function applyOrient(){
