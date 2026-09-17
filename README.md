@@ -56,6 +56,8 @@ docs/
 ├── rules.md                  # 규칙 정리 + 구현 확정 사항
 └── design/
     ├── build.py              # 템플릿 → 단일 HTML 빌드 (에셋을 data URI로 인라인)
+    ├── engine.js             # 규칙 한 벌 + 알파베타 탐색 (UI와 AI가 같이 쓴다)
+    ├── engine.test.js        # node engine.test.js — perft·트라이·캐치·자기대국
     ├── *.template.html       # 편집하는 원본
     ├── *.html                # 빌드 산출물 (그대로 열면 동작)
     │                          #   motion만 저장소 루트 index.html 로 나간다
@@ -77,7 +79,8 @@ python build.py motion      # motion.template.html → motion.html
 `build.py`가 하는 일은 두 가지다.
 
 1. `[[koma|<기물클래스>|<추가클래스>]]` 를 코마 마크업으로 전개 (이동 방향 점은 기물 종류에서 자동으로 뽑는다)
-2. `ASSET:<경로>` 를 data URI로 치환 — 에셋마다 **한 번만** 등장하도록 CSS 클래스에서 참조하므로 중복되지 않는다
+2. `[[include|<경로>]]` 를 파일 내용 그대로 치환 — `engine.js` 처럼 따로 두고 node 로 테스트하는 코드를 위해서다
+3. `ASSET:<경로>` 를 data URI로 치환 — 에셋마다 **한 번만** 등장하도록 CSS 클래스에서 참조하므로 중복되지 않는다
 
 ---
 

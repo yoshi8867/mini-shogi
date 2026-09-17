@@ -370,9 +370,14 @@ body.set-beast .a-rooster {--src:url(ASSET:pieces-x/rooster.png);--k:.95}
 </aside>
 
 <script>
+[[include|engine.js]]
+</script>
+
+<script>
 (() => {
 "use strict";
 const $ = s => document.querySelector(s);
+const EG = ENGINE();                    // 규칙과 탐색은 전부 여기 있다
 const layer = $("#layer"), hints = $("#hints"), grid = $("#grid"),
       board = $("#board"), stage = $("#stage"), banner = $("#banner"), log = $("#log");
 
@@ -397,6 +402,20 @@ const STEP = {
   H:[[0,-1],[1,-1],[1,0],[0,1],[-1,0],[-1,-1]]
 };
 const DIRCLASS = {"0,-1":"n","1,-1":"ne","1,0":"e","1,1":"se","0,1":"s","-1,1":"sw","-1,0":"w","-1,-1":"nw"};
+const TIDX = {C:EG.C, E:EG.E, G:EG.G, H:EG.H, L:EG.L};
+const TCHR = {[EG.C]:"C", [EG.E]:"E", [EG.G]:"G", [EG.H]:"H", [EG.L]:"L"};
+/* UI 의 기물 객체를 엔진이 읽는 납작한 판으로 옮긴다.
+   좌표계는 이미 같다 — i = r*3 + c, r=0 이 화면 위. */
+function snapshot(t){
+  const b = new Int8Array(12);
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
+    const p = cells[r][c];
+    if (p) b[r*COLS + c] = TIDX[p.t] * (p.s === 0 ? 1 : -1);
+  }
+  const hd = [[0,0,0],[0,0,0]];
+  hand.forEach((hh, s) => hh.forEach(p => hd[s][EG.HSLOT[TIDX[p.t]]]++));
+  return {b, hand:hd, turn: t === undefined ? turn : t};
+}
 const ROT = s => LAND ? (s === 0 ? -90 : 90) : (s === 0 ? 0 : 180);
 const backRank = s => s === 0 ? 0 : ROWS - 1;
 
@@ -409,16 +428,14 @@ function freshGame(){
   put(2,1,"C",0); put(3,0,"E",0); put(3,1,"L",0); put(3,2,"G",0);
   hand = [[],[]]; turn = first; sel = null; busy = false; over = false; seen = new Map();
 }
-const steps = p => STEP[p.t].map(([dx,dy]) => p.s === 0 ? [dx,dy] : [-dx,-dy]);
 function movesOf(r,c){
   const p = cells[r][c], out = [];
   if (!p) return out;
-  for (const [dx,dy] of steps(p)){
-    const nr = r + dy, nc = c + dx;
-    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
-    const t = cells[nr][nc];
-    if (t && t.s === p.s) continue;
-    out.push({r:nr, c:nc, take:t});
+  const from = r*COLS + c;
+  for (const m of EG.gen(snapshot(p.s))){
+    if (EG.from(m) !== from) continue;
+    const to = EG.to(m), tr = (to/COLS)|0, tc = to%COLS;
+    out.push({r:tr, c:tc, take:cells[tr][tc]});
   }
   return out;
 }
@@ -427,21 +444,9 @@ function emptyCells(){
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (!cells[r][c]) out.push({r, c, take:null});
   return out;
 }
-function attacked(r, c, bySide){
-  for (let pr = 0; pr < ROWS; pr++) for (let pc = 0; pc < COLS; pc++){
-    const q = cells[pr][pc];
-    if (!q || q.s !== bySide) continue;
-    for (const [dx,dy] of steps(q)) if (pr + dy === r && pc + dx === c) return true;
-  }
-  return false;
-}
-function hasAnyMove(side){
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
-    const p = cells[r][c];
-    if (p && p.s === side && movesOf(r,c).length) return true;
-  }
-  return hand[side].length > 0 && emptyCells().length > 0;
-}
+/* 드롭으로는 사자를 잡을 수 없으므로 판 위 기물만 본다 — 엔진도 같다 */
+const attacked = (r, c, bySide) => EG.attacked(snapshot(bySide), r*COLS + c, bySide);
+const hasAnyMove = side => EG.gen(snapshot(side)).length > 0;
 function posKey(){
   let k = "";
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++){
@@ -884,6 +889,11 @@ function render(){
   seen.set(posKey(), 1);
 }
 function start(){
+  /* 스냅샷이 엔진과 어긋나면 여기서 티가 난다 — 초기 국면의 합법수는 넷이다 */
+  if (cells === undefined) setTimeout(() => {
+    const n = EG.gen(snapshot()).length;
+    if (n !== 4) console.warn("스냅샷이 엔진과 어긋난다: 합법수 " + n);
+  }, 0);
   clockStop();
   if (cells) first = 1 - first;         // 첫 판만 그대로, 다음 판부터 번갈아
   freshGame(); render();

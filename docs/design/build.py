@@ -20,7 +20,13 @@ def koma(m):
             f'<div class="box"><i class="art {art}"></i>{pips}</div></div>')
 html, n_koma = re.subn(r"\[\[koma\|([^|\]]+)(?:\|([^\]]*))?\]\]", koma, html)
 
-# ── 2. ASSET:<path> → data URI (자산마다 한 번만 등장하도록 CSS 클래스에서 참조) ──
+# ── 2. [[include|<path>]] → 파일 내용 그대로 (엔진처럼 따로 두고 테스트하는 코드) ──
+def inc(m):
+    p = os.path.join(BASE, m.group(1))
+    return open(p, encoding="utf-8").read()
+html, n_inc = re.subn(r"\[\[include\|([A-Za-z0-9_\-./]+)\]\]", inc, html)
+
+# ── 3. ASSET:<path> → data URI (자산마다 한 번만 등장하도록 CSS 클래스에서 참조) ──
 cache, missing = {}, []
 def sub(m):
     rel = m.group(1)
@@ -34,5 +40,5 @@ def sub(m):
 html = re.sub(r"ASSET:([A-Za-z0-9_\-./]+)", sub, html)
 open(dst, "w", encoding="utf-8").write(html)
 dup = [r for r in cache if html.count(cache[r]) > 1]
-print(f"koma expanded: {n_koma} | assets: {len(cache)} | missing: {missing or 'none'} | duplicated: {dup or 'none'}")
+print(f"koma expanded: {n_koma} | includes: {n_inc} | assets: {len(cache)} | missing: {missing or 'none'} | duplicated: {dup or 'none'}")
 print(f"output: {dst}  {os.path.getsize(dst)/1024/1024:.2f} MB")
