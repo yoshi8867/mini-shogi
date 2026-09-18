@@ -45,14 +45,24 @@ const TAIL = [
   "나비","잠자리","사마귀","매미","귀뚜라미","반딧불이","달팽이","쥐",
 ];
 
+/* 해시의 낮은 비트를 마저 흩는다.
+   FNV 도 djb2 도 아래쪽 비트가 잘 안 섞인다. 96 = 32×3 이라 나머지를 구할 때
+   그 낮은 비트를 그대로 쓰게 되고, 그러면 어떤 말은 열 배 자주 나온다.
+   실제로 "발빠른 캥거루"와 "발빠른 물개"가 연달아 나왔다. */
+function mix(x){
+  x ^= x >>> 16; x = Math.imul(x, 2246822507) >>> 0;
+  x ^= x >>> 13; x = Math.imul(x, 3266489909) >>> 0;
+  x ^= x >>> 16;
+  return x >>> 0;
+}
 /* pid 를 두 갈래로 흩어 앞말과 뒷말을 고른다 — 처음 받는 이름 */
 function seedOf(pid){
   let a = 2166136261, b = 5381;
   for (let i = 0; i < pid.length; i++){
-    a = ((a ^ pid.charCodeAt(i)) * 16777619) >>> 0;
-    b = ((b * 33) ^ pid.charCodeAt(i)) >>> 0;
+    a = (Math.imul(a ^ pid.charCodeAt(i), 16777619)) >>> 0;
+    b = ((Math.imul(b, 33)) ^ pid.charCodeAt(i)) >>> 0;
   }
-  return {h: a % HEAD.length, t: b % TAIL.length};
+  return {h: mix(a) % HEAD.length, t: mix(b) % TAIL.length};
 }
 const join  = p => HEAD[p.h] + " " + TAIL[p.t];
 const nameOf = pid => join(seedOf(pid));

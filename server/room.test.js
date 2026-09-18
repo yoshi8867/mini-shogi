@@ -75,6 +75,30 @@ const sockA = {id:"A"}, sockB = {id:"B"}, sockC = {id:"C"};
   console.log("roll    앞말·뒷말 따로 · 늘 다른 말 · 96자리 고루 나옴 · 연승 유지");
 }
 
+/* ── 2-2. pid 에서 뽑는 첫 이름이 쏠리지 않는가 ─────────────────────────
+   해시의 낮은 비트가 안 섞이면 어떤 말이 열 배 자주 나온다. 실제로 그랬다. */
+{
+  const N = 60000, H = new Array(96).fill(0), T = new Array(96).fill(0);
+  const seen = new Set();
+  for (let i = 0; i < N; i++){
+    const pid = "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    const [h, t] = players.nameOf(pid).split(" ");
+    H[players.HEAD.indexOf(h)]++; T[players.TAIL.indexOf(t)]++;
+    seen.add(h + " " + t);
+  }
+  const chi = a => { const e = N / 96; return a.reduce((s, v) => s + (v - e) * (v - e) / e, 0); };
+  const ch = chi(H), ct = chi(T);
+  /* 자유도 95면 카이제곱은 95 언저리다. 200 을 넘으면 우연이 아니다 */
+  assert.ok(ch < 200, `앞말이 쏠린다 (카이제곱 ${ch.toFixed(0)})`);
+  assert.ok(ct < 200, `뒷말이 쏠린다 (카이제곱 ${ct.toFixed(0)})`);
+  /* 조합 전부(9216)를 보려면 8만 번 넘게 뽑아야 한다 — 쿠폰수집가다.
+     여기서 볼 것은 96자리가 하나도 빠지지 않는가다 */
+  assert.strictEqual(H.filter(v => v === 0).length, 0, "한 번도 안 나오는 앞말이 있다");
+  assert.strictEqual(T.filter(v => v === 0).length, 0, "한 번도 안 나오는 뒷말이 있다");
+  console.log(`seed    ${N}개 pid · 카이제곱 앞말 ${ch.toFixed(0)} 뒷말 ${ct.toFixed(0)} · ` +
+              `${seen.size}가지 · 빠진 말 없음`);
+}
+
 /* ── 3. 자리 ─────────────────────────────────────────────────────────── */
 {
   const r = new Room("TEST");
