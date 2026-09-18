@@ -1431,7 +1431,7 @@ const NETQ = new URLSearchParams(location.search);
 const SERVER = NETQ.get("server") || (
   /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname)
     ? "ws://" + (location.hostname || "127.0.0.1") + ":3000/ws"
-    : "wss://mini-shogi-server.onrender.com/ws");
+    : "wss://mini-shogi.onrender.com/ws");
 const WHY = {catch:"캐치", try:"트라이", repeat:"같은 국면 3회", stuck:"둘 수가 없음",
              resign:"기권", time:"시간 초과"};
 const NETERR = {nocode:"그런 방이 없습니다", full:"이미 두 사람이 있습니다",

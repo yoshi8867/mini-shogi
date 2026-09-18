@@ -172,7 +172,7 @@ node ws.test.js           # 서버를 띄워 소켓으로 한 판 끝까지
 
 ### 어디에 붙는가
 
-클라이언트는 기본적으로 `wss://mini-shogi-server.onrender.com/ws` 를 본다.
+클라이언트는 기본적으로 `wss://mini-shogi.onrender.com/ws` 를 본다.
 로컬에서는 `ws://<호스트>:3000/ws` 로 간다. 둘 다 아닐 때는 주소 뒤에 붙인다:
 
 ```

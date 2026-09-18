@@ -5,7 +5,7 @@
 # 만들지 않기 위한 의도적인 배치다.
 services:
   - type: web
-    name: mini-shogi-server
+    name: mini-shogi
     runtime: node
     plan: free
     region: singapore          # Neon 이 ap-southeast-1 이다. 붙여 둔다
