@@ -139,6 +139,7 @@ wss.on("connection", ws => {
       case "open":    return onOpen(ws, msg);
       case "join":    return onJoin(ws, msg);
       case "move":    return onMove(ws, msg);
+      case "rename":  return onRename(ws, msg);
       case "rematch": return onRematch(ws);
       case "leave":   return onLeave(ws);
       default:        return send(ws, "error", {why: "unknown"});
@@ -164,6 +165,18 @@ function onHello(ws, msg){
   ws.person = players.get(pid);
   send(ws, "me", players.view(ws.person));
   send(ws, "rooms", {rooms: listing()});
+}
+
+/* 이름 다시 굴리기 — 앞말이나 뒷말 한쪽만. 직접 고르는 길은 없다.
+   대국에 앉은 뒤에는 안 바꾼다. 두는 도중에 상대 이름이 바뀌면 곤란하다. */
+function onRename(ws, msg){
+  if (!ws.person) return send(ws, "error", {why: "nohello"});
+  if (ws.room)    return send(ws, "error", {why: "joined"});
+  const now = Date.now();
+  if (now - (ws.rolled || 0) < 200) return;      // 연타는 흘린다
+  ws.rolled = now;
+  if (!players.reroll(ws.person, msg.part)) return send(ws, "error", {why: "bad"});
+  send(ws, "me", players.view(ws.person));
 }
 
 function onOpen(ws, msg){

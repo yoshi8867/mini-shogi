@@ -88,6 +88,27 @@ async function hello(pid){
     assert.strictEqual((await bad.next("error")).why, "badpid");
     bad.close();
 
+    /* ── 2-1. 이름 다시 굴리기 ─────────────────────────────────────── */
+    const R = await hello("pid-rrrrrrrr-9");
+    let cur = R.me;
+    for (let i = 0; i < 20; i++){
+      const part = i % 2 ? "tail" : "head";
+      R.send("rename", {part});
+      await wait(220);                      // 연타 방지가 있다. 한 박자 쉰다
+      const got = await R.next("me");
+      assert.notStrictEqual(got[part], cur[part], `${part} 이 그대로다`);
+      assert.strictEqual(got[part === "head" ? "tail" : "head"],
+                         cur[part === "head" ? "tail" : "head"], "다른 쪽까지 바뀌었다");
+      assert.strictEqual(got.name, got.head + " " + got.tail);
+      cur = got;
+    }
+    R.send("rename", {part: "직접입력"});
+    assert.strictEqual((await R.next("error")).why, "bad", "엉뚱한 자리를 받아줬다");
+    const back = await hello("pid-rrrrrrrr-9");
+    assert.strictEqual(back.me.name, cur.name, "다시 들어오니 이름이 돌아갔다");
+    back.close(); R.close();
+    console.log(`rename  앞말/뒷말 따로 20번 · 마지막 "${cur.name}"`);
+
     /* ── 3. 대국 열기 · 목록 ────────────────────────────────────────── */
     A.send("open", {open: true});
     const seatedA = await A.next("seated");
@@ -118,6 +139,9 @@ async function hello(pid){
     assert.strictEqual(st1.people[0].name, A.me.name);
     assert.strictEqual(st1.people[1].name, B.me.name);
     console.log(`join    ${A.me.name} vs ${B.me.name} · 시계 ${Math.round(st1.left/1000)}초`);
+
+    B.send("rename", {part: "head"});
+    assert.strictEqual((await B.next("error")).why, "joined", "대국 중에 이름이 바뀌었다");
 
     const C = await hello("pid-cccccccc-3");
     C.send("join", {code});

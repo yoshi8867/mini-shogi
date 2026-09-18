@@ -190,11 +190,20 @@ body.portrait .bmsg.a{transform:none} body.portrait .bmsg.b{transform:rotate(180
 .net-empty{color:var(--chalk-dim);font-size:13px;padding:var(--s3) 0;text-align:center}
 .lock{font-size:11px;color:var(--mark);flex:none}
 
-/* 나 */
-.net-me{margin-top:var(--s3);padding-top:var(--s2);border-top:1px solid var(--wall-line);
-  display:flex;align-items:center;gap:8px;font-size:13.5px}
+/* 나 — 이름은 고르는 것이 아니라 뽑는 것이다 */
+.net-me{margin-top:var(--s3);padding-top:var(--s2);border-top:1px solid var(--wall-line)}
+.me-row{display:flex;align-items:center;gap:8px;font-size:13.5px;flex-wrap:wrap}
 .net-me .lab{font-size:11px;letter-spacing:.14em;color:var(--chalk-dim);
   font-family:'JetBrains Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:5px;
+  background:var(--wall);border:1px solid var(--wall-line);color:var(--chalk);
+  font:700 13.5px/1 'Gothic A1',system-ui,sans-serif;cursor:pointer}
+.chip:hover{border-color:var(--mark)}
+.chip .r{font-size:11px;color:var(--chalk-dim);transition:color .15s}
+.chip:hover .r{color:var(--mark)}
+.chip.spin .r{animation:roll .4s ease}
+@keyframes roll{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.me-hint{margin:6px 0 0;font-size:11.5px;color:var(--chalk-dim)}
 .net-close{margin-top:var(--s2);background:none;border:0;color:var(--chalk-dim);
   font:700 12px/1 'Gothic A1',system-ui,sans-serif;cursor:pointer;padding:6px 0}
 .net-close:hover{color:var(--chalk)}
@@ -951,6 +960,9 @@ async function doDrop(p, r, c, dragged, server){
 }
 function endTurn(){
   turn = 1 - turn; updateTurn();
+  /* 온라인에서 판정은 서버가 한다. 여기서 끝을 선언하면, 들어가기 직전까지
+     돌던 로컬 판이 뒤늦게 끝나면서 남의 대국 위에 승패를 덮어쓴다. */
+  if (ONLINE()){ busy = false; return netSync(); }
   const k = posKey(), n = (seen.get(k) || 0) + 1;
   seen.set(k, n);
   if (n >= 3){ finish(null); return; }                // 같은 국면 3회
@@ -1304,10 +1316,33 @@ function showList(){
     if (waiting) li.addEventListener("click", () => enter(r));
     ul.appendChild(li);
   });
-  const mine = nel("netMe");
-  mine.innerHTML = me
-    ? `<span class="lab">나</span><b>${esc(me.name)}</b>${badgeHTML(me)}`
-    : `<span class="lab">나</span><span class="vs">연결하는 중…</span>`;
+  paintMe();
+}
+
+/* 내 이름. 앞말과 뒷말이 각각 칸이고, 누르면 그 칸만 다시 뽑는다.
+   직접 쓰는 길은 두지 않는다 — 이름은 주어지는 것이다. */
+function paintMe(){
+  const box = nel("netMe");
+  if (!me){
+    box.innerHTML = `<div class="me-row"><span class="lab">나</span>` +
+                    `<span class="vs">연결하는 중…</span></div>`;
+    return;
+  }
+  const part = me.name ? me.name.split(" ") : ["", ""];
+  const head = me.head || part[0], tail = me.tail || part[1];
+  const chip = (k, w, t) =>
+    `<button class="chip" type="button" data-part="${k}" title="${t}">` +
+    `<span class="w">${esc(w)}</span><span class="r">⟳</span></button>`;
+  box.innerHTML =
+    `<div class="me-row"><span class="lab">나</span>` +
+    chip("head", head, "앞말 다시 뽑기") + chip("tail", tail, "뒷말 다시 뽑기") +
+    badgeHTML(me) + `</div>` +
+    `<p class="me-hint">이름은 고를 수 없습니다. 칸을 누르면 다시 뽑습니다.</p>`;
+  box.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
+    b.classList.add("spin");
+    setTimeout(() => b.classList.remove("spin"), 400);
+    netConnect(() => netTell("rename", {part: b.dataset.part}));
+  }));
 }
 function enter(r){
   if (r.open) return netTell("join", {code: r.code});
@@ -1357,7 +1392,7 @@ function forms(show){
 /* ─── 서버 소식 ─── */
 function netRecv(msg){
   switch (msg.t){
-    case "me":    me = msg; showList(); break;
+    case "me":    me = msg; showList(); break;   // 목록의 내 이름도 같이 바뀐다
     case "rooms": rows = msg.rooms || []; showList(); break;
     case "seated":
       vs = "online"; mySide = msg.side; netCode = msg.code; netPly = 0;

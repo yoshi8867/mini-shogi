@@ -40,6 +40,41 @@ const sockA = {id:"A"}, sockB = {id:"B"}, sockC = {id:"C"};
   console.log(`name    pid 에서 결정 · ${combos}가지 · 뱃지 2 남색 / 5 크림슨 / 10 금색`);
 }
 
+/* ── 2-1. 이름 다시 굴리기 ──────────────────────────────────────────── */
+{
+  assert.strictEqual(players.HEAD.length, 96, "앞말이 96개가 아니다");
+  assert.strictEqual(players.TAIL.length, 96, "뒷말이 96개가 아니다");
+  assert.strictEqual(new Set(players.HEAD).size, 96, "앞말이 겹친다");
+  assert.strictEqual(new Set(players.TAIL).size, 96, "뒷말이 겹친다");
+
+  const p = players.get("pid-roll-check");
+  p.streak = 3;
+  for (let i = 0; i < 500; i++){        // 앞말만 굴리면 뒷말은 그대로다
+    const was = players.view(p);
+    assert.ok(players.reroll(p, "head"));
+    const now = players.view(p);
+    assert.notStrictEqual(now.head, was.head, "같은 앞말이 다시 나왔다");
+    assert.strictEqual(now.tail, was.tail, "앞말을 굴렸는데 뒷말이 바뀌었다");
+    assert.strictEqual(now.name, now.head + " " + now.tail, "이름이 안 맞는다");
+  }
+  for (let i = 0; i < 500; i++){        // 뒷말도 마찬가지
+    const was = players.view(p);
+    assert.ok(players.reroll(p, "tail"));
+    const now = players.view(p);
+    assert.notStrictEqual(now.tail, was.tail, "같은 뒷말이 다시 나왔다");
+    assert.strictEqual(now.head, was.head, "뒷말을 굴렸는데 앞말이 바뀌었다");
+  }
+  assert.strictEqual(p.streak, 3, "이름을 바꿨다고 연승이 날아갔다");
+  assert.strictEqual(players.reroll(p, "name"), false, "엉뚱한 자리를 굴렸다");
+  assert.strictEqual(players.reroll(null, "head"), false);
+
+  /* 한쪽으로 쏠리지 않는지 — 96자리를 1만 번 굴려 전부 나오는가 */
+  const hit = new Set();
+  for (let i = 0; i < 10000; i++){ players.reroll(p, "head"); hit.add(players.view(p).head); }
+  assert.strictEqual(hit.size, 96, `안 나오는 앞말이 있다 (${hit.size}/96)`);
+  console.log("roll    앞말·뒷말 따로 · 늘 다른 말 · 96자리 고루 나옴 · 연승 유지");
+}
+
 /* ── 3. 자리 ─────────────────────────────────────────────────────────── */
 {
   const r = new Room("TEST");
