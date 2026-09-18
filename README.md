@@ -57,8 +57,6 @@ docs/
 ├── rules.md                  # 규칙 정리 + 구현 확정 사항
 └── design/
     ├── build.py              # 템플릿 → 단일 HTML 빌드 (에셋을 data URI로 인라인)
-    ├── engine.js             # 규칙 한 벌 + 알파베타 탐색 (UI와 AI가 같이 쓴다)
-    ├── engine.test.js        # node engine.test.js — perft·트라이·캐치·자기대국
     ├── *.template.html       # 편집하는 원본
     ├── *.html                # 빌드 산출물 (그대로 열면 동작)
     │                          #   motion만 저장소 루트 index.html 로 나간다
@@ -66,6 +64,15 @@ docs/
     ├── pieces-x/             # 이스터에그 세트 8종
     ├── wood/                 # 목재 텍스처 (세로결 / -90 가로결)
     └── alt/                  # 대안 소스 비교용 (Fluent Emoji, CC0 실루엣)
+shared/
+├── engine.js             # 규칙 한 벌 + 알파베타 탐색. 브라우저·워커·서버가 같이 쓴다
+└── engine.test.js        # node shared/engine.test.js
+server/                   # 온라인 대전 (Render)
+├── index.js              # HTTP(/healthz) + WebSocket(/ws)
+├── room.js               # 방 하나의 심판
+├── db.js                 # 기보 저장 (Neon Postgres, 없으면 꺼진 채로 돈다)
+├── room.test.js          # node room.test.js
+└── ws.test.js            # node ws.test.js — 서버를 띄워 한 판 끝까지
 assets/source/                # 원본 생성 이미지
 tools/                        # 원본 이미지 → 알파 마스크 추출 스크립트
 ```
@@ -133,3 +140,41 @@ python build.py motion      # motion.template.html → motion.html
 - 체스 기물 — [Cburnett](https://commons.wikimedia.org/wiki/User:Cburnett), Wikimedia Commons, [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). `tools/fetch-chess-pieces.py` 로 받아 알파 마스크로 변환한다.
   chess.com 의 기물 이미지는 저작권이 있어 쓰지 않았다.
 - 원작 — どうぶつしょうぎ, 규칙 키타오 마도카 · 그림 후지타 마이코, 2008
+
+---
+
+## 온라인 대전
+
+한 기기에 마주 앉는 대신 각자 기기에서 둔다. 서버가 **심판**이다 —
+클라이언트가 보낸 수는 제안일 뿐이고, 판은 서버의 `engine.js` 가 직접 굴린다.
+규칙이 두 벌로 갈라지지 않도록 **클라이언트와 서버가 같은 파일을 쓴다**.
+
+| | |
+|---|---|
+| 방 | 네 글자 코드. 헷갈리는 `I O 0 1` 은 빼고 만든다 |
+| 시계 | 한 수 30초. **서버가 갖는다**. 클라이언트 시계는 표시용 |
+| 종료 | 캐치 · 트라이 · 스테일메이트 · 3회 반복 · 시간 초과 · 기권 |
+| 재접속 | 자리표(token)로 같은 자리에 돌아온다. 새로고침까지 |
+| 기보 | 끝난 판만 Neon 에 남는다. 수가 정수 하나라 `int[]` 한 칸 |
+| AI | 서버는 탐색하지 않는다. 혼자 두기는 그대로 클라이언트 워커 |
+
+### 돌려보기
+
+```
+cd server
+npm install
+npm start                 # http://localhost:3000/healthz
+node room.test.js         # 심판 규칙
+node ws.test.js           # 서버를 띄워 소켓으로 한 판 끝까지
+```
+
+`DATABASE_URL` 은 `server/.env` 에 둔다(`\.env.example` 참고). **커밋하지 않는다.**
+없으면 기보만 안 남고 대국은 그대로 된다.
+
+### 배포
+
+`render.yaml` 이 블루프린트다. Render 무료 인스턴스는 **15분 무입력이면 잠들고
+깨는 데 1분쯤** 걸리므로 밖에서 `/healthz` 를 주기적으로 두드려 깨워 둔다.
+상시 가동은 월 744시간이라 무료 750시간을 거의 다 쓴다 — 그 워크스페이스에
+다른 무료 서비스는 올리지 않는 편이 좋다.
+

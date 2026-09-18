@@ -669,7 +669,7 @@ function fresh(){
 
 return {
   C, E, G, H, L, BACK, HTYPE, HSLOT, MATE,
-  fresh, hash, attacked, perft, best, decisive,
+  fresh, hash, attacked, perft, best, decisive, make, unmake,
   gen(pos){                              // UI 용 — 편하게 배열로 준다
     const buf=new Int32Array(64), n=genInto(pos, buf), out=[];
     for (let i=0;i<n;i++) out.push(buf[i]);
