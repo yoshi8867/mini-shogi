@@ -311,14 +311,6 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 .hud-btn:hover{color:var(--ink);border-color:var(--ink)}
 .hud-btn[aria-pressed=false]{color:#a3927b}
 .hud-btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-/* 먼저 고르는 것이 방식이고, 그 다음이 상대다. 둘 다 토글로 붙여 둔다 */
-.seg{display:inline-flex;flex:none;border:1px solid rgba(36,26,16,.2);border-radius:999px;
-  background:rgba(255,255,255,.34);overflow:hidden}
-.seg-btn{border:0;background:none;cursor:pointer;color:#a3927b;padding:9px 13px;
-  font:700 12.5px/1 'Gothic A1',system-ui,sans-serif}
-.seg-btn:hover{color:var(--ink)}
-.seg-btn.on{background:var(--ink);color:var(--paper)}
-.seg[hidden]{display:none}
 .hud-btn.primary:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
 .rules-scrim{position:fixed;inset:0;z-index:41;background:rgba(0,0,0,.55)}
 .rules-drawer{position:fixed;top:0;right:0;bottom:0;z-index:42;width:min(580px,94vw);
@@ -373,14 +365,8 @@ body.ai .t1 .clock{display:none}        /* AI 차례에는 시계를 재지 않�
   <div class="bar">
     <div class="log" id="log">기물을 탭하세요.</div>
     <div class="hud" id="hud">
-      <div class="seg" role="group" aria-label="대국 방식">
-        <button class="seg-btn on" id="offBtn" type="button">오프라인</button>
-        <button class="seg-btn"    id="netBtn" type="button">온라인</button>
-      </div>
-      <div class="seg" id="segFoe" role="group" aria-label="상대">
-        <button class="seg-btn on" id="duoBtn" type="button">둘이 두기</button>
-        <button class="seg-btn"    id="aiBtn"  type="button">AI와 대국</button>
-      </div>
+      <button class="hud-btn" id="modeBtn" aria-pressed="false">오프라인</button>
+      <button class="hud-btn" id="foeBtn"  aria-pressed="false">둘이 두기</button>
       <button class="hud-btn" id="leaveBtn" hidden>나가기</button>
       <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
       <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
@@ -1798,7 +1784,8 @@ function netLeave(quiet){
 }
 
 /* ─── 버튼 ─── */
-nel("netBtn").addEventListener("click", () => { forms({}); netOpen(true); });
+/* 대국 목록을 연다. 모드 버튼이 부른다 */
+function showLobby(){ forms({}); netOpen(true); }
 nel("netClose").addEventListener("click", () => netOpenPanel(false));
 nel("netScrim").addEventListener("click", () => netOpenPanel(false));
 nel("netNew").addEventListener("click", () => {
@@ -1828,27 +1815,30 @@ nel("netAsk").addEventListener("submit", e => {
   netTell("join", {code: askCode, pin: pin});
 });
 
-/* 먼저 오프라인/온라인을 고르고, 오프라인이면 상대를 고른다.
-   지금 무엇을 두고 있는지가 버튼에 그대로 드러나야 한다 */
+/* 버튼은 지금 무엇을 두고 있는지를 말한다. 누르면 반대로 넘어간다.
+   먼저 오프라인/온라인이고, 오프라인일 때만 상대를 고른다. */
 function paintHud(){
   const on = ONLINE();
-  $("#offBtn").classList.toggle("on", !on);
-  $("#netBtn").classList.toggle("on", on);
-  $("#segFoe").hidden = on;
-  $("#duoBtn").classList.toggle("on", !on && vs === "human");
-  $("#aiBtn").classList.toggle("on",  !on && vs === "ai");
+  const mode = $("#modeBtn"), foe = $("#foeBtn");
+  mode.textContent = on ? "온라인" : "오프라인";
+  mode.setAttribute("aria-pressed", String(on));
+  foe.hidden = on;
+  foe.textContent = vs === "ai" ? "AI와 대국" : "둘이 두기";
+  foe.setAttribute("aria-pressed", String(vs === "ai"));
   $("#leaveBtn").hidden = !on;
 }
-function setFoe(who){
-  if (!quitOnline()) return;              // 온라인이면 먼저 자리를 뜬다
-  vs = who;
+$("#modeBtn").addEventListener("click", () => {
+  if (!ONLINE()) return showLobby();       // 오프라인 → 온라인: 대국 목록을 연다
+  netOpenPanel(false);
+  quitOnline(false);                      // 온라인 → 오프라인: 자리를 뜨고 판으로
+});
+$("#foeBtn").addEventListener("click", () => {
+  if (!quitOnline(false)) return;         // 온라인이었다면 먼저 자리를 뜬다
+  vs = vs === "ai" ? "human" : "ai";
   document.body.classList.toggle("ai", vs === "ai");
   paintHud();
   start();
-}
-$("#duoBtn").addEventListener("click", () => { if (!ONLINE() && vs === "human") return; setFoe("human"); });
-$("#aiBtn") .addEventListener("click", () => { if (!ONLINE() && vs === "ai")    return; setFoe("ai"); });
-$("#offBtn").addEventListener("click", () => { netOpenPanel(false); quitOnline(false); });
+});
 /* 화면 비율이 배치를 정한다 */
 function applyOrient(){
   LAND = !ONLINE() && innerWidth >= innerHeight;
