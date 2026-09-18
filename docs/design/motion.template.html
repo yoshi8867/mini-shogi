@@ -260,6 +260,9 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
   min-height:5.4em;line-height:1.85}
 .log b{color:var(--ink)}
 
+.win{margin:var(--s3) 0 0;padding-left:1.25em;font-size:14.5px;color:var(--chalk)}
+.win li{margin-bottom:8px;max-width:74ch}
+.win li b{color:var(--chalk)}
 .notes{margin:var(--s3) 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--chalk-dim)}
 .notes li{padding-left:15px;position:relative;margin-bottom:9px;max-width:74ch}
 .notes li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:5px;
@@ -308,6 +311,14 @@ button:focus-visible,.hint:focus-visible,.pc:focus-visible{outline:2px solid var
 .hud-btn:hover{color:var(--ink);border-color:var(--ink)}
 .hud-btn[aria-pressed=false]{color:#a3927b}
 .hud-btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+/* 먼저 고르는 것이 방식이고, 그 다음이 상대다. 둘 다 토글로 붙여 둔다 */
+.seg{display:inline-flex;flex:none;border:1px solid rgba(36,26,16,.2);border-radius:999px;
+  background:rgba(255,255,255,.34);overflow:hidden}
+.seg-btn{border:0;background:none;cursor:pointer;color:#a3927b;padding:9px 13px;
+  font:700 12.5px/1 'Gothic A1',system-ui,sans-serif}
+.seg-btn:hover{color:var(--ink)}
+.seg-btn.on{background:var(--ink);color:var(--paper)}
+.seg[hidden]{display:none}
 .hud-btn.primary:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
 .rules-scrim{position:fixed;inset:0;z-index:41;background:rgba(0,0,0,.55)}
 .rules-drawer{position:fixed;top:0;right:0;bottom:0;z-index:42;width:min(580px,94vw);
@@ -362,10 +373,16 @@ body.ai .t1 .clock{display:none}        /* AI 차례에는 시계를 재지 않�
   <div class="bar">
     <div class="log" id="log">기물을 탭하세요.</div>
     <div class="hud" id="hud">
-      <button class="hud-btn" id="netBtn">온라인</button>
-      <button class="hud-btn" id="vsBtn" aria-pressed="false">둘이 두기</button>
+      <div class="seg" role="group" aria-label="대국 방식">
+        <button class="seg-btn on" id="offBtn" type="button">오프라인</button>
+        <button class="seg-btn"    id="netBtn" type="button">온라인</button>
+      </div>
+      <div class="seg" id="segFoe" role="group" aria-label="상대">
+        <button class="seg-btn on" id="duoBtn" type="button">둘이 두기</button>
+        <button class="seg-btn"    id="aiBtn"  type="button">AI와 대국</button>
+      </div>
+      <button class="hud-btn" id="leaveBtn" hidden>나가기</button>
       <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
-      <button class="hud-btn" id="reset">처음으로</button>
       <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
     </div>
   </div>
@@ -404,96 +421,36 @@ body.ai .t1 .clock{display:none}        /* AI 차례에는 시계를 재지 않�
   <button class="net-close" id="netClose">닫기</button>
 </div>
 <div class="rules-scrim" id="rulesScrim" hidden></div>
-<aside class="rules-drawer" id="rulesDrawer" hidden aria-label="규칙과 설계 기록">
+<aside class="rules-drawer" id="rulesDrawer" hidden aria-label="규칙">
   <div class="rules-head">
     <h2>규칙</h2>
     <button class="rules-close" id="rulesClose" aria-label="닫기">✕</button>
   </div>
   <div class="rules-body">
 <section class="block">
-  <p class="lede">기물은 체스 모양이지만 규칙은 일본 동물쇼기 그대로입니다. 룩도 비숍도 <b>한 칸만</b> 갑니다 — 기물에 찍힌 먹색 점이 곧 갈 수 있는 방향입니다.</p>
+  <p class="lede">기물은 체스 모양이지만 규칙은 동물쇼기입니다. 룩도 비숍도 <b>한 칸만</b> 갑니다 — 기물에 찍힌 점이 갈 수 있는 방향입니다.</p>
+
   <table class="tbl">
     <tr><th>기물</th><th>움직임</th></tr>
-    <tr><td>킹</td><td>8방향 1칸. 양쪽의 왕이고, 이것이 잡히면 진다</td></tr>
-    <tr><td>룩</td><td>상하좌우 1칸</td></tr>
-    <tr><td>비숍</td><td>대각 4방향 1칸</td></tr>
-    <tr><td>폰</td><td>앞 1칸. 상대 끝줄에 닿으면 <b>퀸</b>으로 승격</td></tr>
-    <tr><td>퀸</td><td>대각선 뒤 둘을 뺀 6방향 1칸</td></tr>
+    <tr><td>킹</td><td>여덟 방향 한 칸</td></tr>
+    <tr><td>룩</td><td>상하좌우 한 칸</td></tr>
+    <tr><td>비숍</td><td>대각 네 방향 한 칸</td></tr>
+    <tr><td>폰</td><td>앞 한 칸. 상대 끝줄에 닿으면 <b>퀸</b>이 된다</td></tr>
+    <tr><td>퀸</td><td>뒤 대각 둘을 뺀 여섯 방향 한 칸</td></tr>
   </table>
-  <table class="tbl" style="margin-top:var(--s3)">
-    <tr><th>승패</th><th>조건</th></tr>
-    <tr><td>캐치</td><td>상대의 왕을 잡는다</td></tr>
-    <tr><td>트라이</td><td>내 왕이 상대 끝줄에 닿는다. 단 <b>그 자리가 잡히는 자리가 아닐 것</b></td></tr>
-    <tr><td>무승부</td><td>같은 국면이 세 번 반복된다</td></tr>
-  </table>
+
+  <h2>이기는 방법</h2>
+  <ol class="win">
+    <li><b>상대 킹을 잡는다.</b></li>
+    <li><b>내 킹이 상대 끝줄에 닿는다.</b>
+        단, 그 자리가 상대에게 잡히는 자리면 안 된다.</li>
+  </ol>
+
   <ul class="notes">
-    <li>잡은 기물은 자기 것이 되어 <b>빈 칸 아무 곳에나</b> 다시 놓을 수 있습니다. 같은 열에 병아리를 둘 놓아도, 맨 끝줄에 놓아도 됩니다 — 대신 놓은 병아리는 그 자리에서 승격하지 않습니다.</li>
-    <li>둘이 <b>마주 앉아</b> 둡니다. 화면이 가로로 넓으면 좌우로, 세로로 길면 위아래로 앉습니다 — 배치는 화면 비율을 보고 알아서 바뀝니다.</li>
+    <li>잡은 기물은 내 것이 되어 <b>빈 칸 아무 곳에나</b> 놓을 수 있습니다. 놓은 폰은 그 자리에서 승격하지 않습니다.</li>
+    <li>같은 국면이 세 번 나오면 무승부입니다.</li>
+    <li>한 수는 <b>30초</b>. 넘기면 집니다.</li>
   </ul>
-</section>
-
-<section class="block">
-  <h2>붙인 판정</h2>
-  <p class="lede">규칙 문서에서 확정한 그대로입니다. 자살수는 막지 않고, 승격은 강제이며, 드롭에는 제약이 없습니다.</p>
-  <table class="tbl">
-    <tr><th>판정</th><th>조건</th><th>구현</th></tr>
-    <tr><td>캐치</td><td>상대 사자를 잡음</td><td>잡은 순간 즉시 승. 외통을 따로 검사하지 않고 실제로 잡히는 것으로 끝냅니다 — 자살수를 막지 않기로 했으니 이게 일관됩니다.</td></tr>
-    <tr><td>트라이</td><td>내 사자가 상대 끝줄에 도달, <b>그 시점에 장군이 아닐 것</b></td><td>사자가 끝줄에 내려앉은 뒤 그 칸이 공격받는지 검사합니다. 드롭으로는 사자를 잡을 수 없으므로 판 위 기물만 봅니다. 공격받는 칸이면 승리가 아니고 대국이 이어집니다.</td></tr>
-    <tr><td>스테일메이트</td><td>둘 수 있는 수가 하나도 없음</td><td>차례가 넘어간 직후 이동과 드롭을 모두 훑어 하나도 없으면 그 플레이어가 <b>패배</b>합니다. 드롭이 있어 실제로는 거의 안 나옵니다.</td></tr>
-    <tr><td>무승부</td><td>같은 국면 3회</td><td>판 배치 + <b>양쪽 손패</b> + 둘 차례까지 묶어 지문을 만들고 3회째에 무승부. 연속 장군도 결국 같은 국면으로 돌아오므로 이 한 규칙이 퍼페추얼 체크까지 덮습니다. 2회째에는 로그로 미리 알립니다.</td></tr>
-    <tr><td>시간 초과</td><td>한 수를 <b>30초</b> 안에 두지 못함</td><td>차례가 시작될 때 30초부터 줄어듭니다. 남은 10초부터 시계가 붉게 깜빡이고 5초부터 초읽기 소리가 납니다. 0이 되면 그 플레이어가 패배합니다. 연출이 도는 동안에는 시계가 멈춥니다.</td></tr>
-  </table>
-</section>
-
-<section class="block">
-  <h2>마주 앉는 배치</h2>
-  <div class="cards">
-    <div class="card pick">
-      <h4>화면 비율이 배치를 정합니다</h4>
-      <p>가로로 넓으면 판을 <b>눕혀</b> 4칸 가로 × 3칸 세로로 놓고 둘이 좌우에 마주 앉습니다. 세로로 길면 판을 <b>세워</b> 3칸 가로 × 4칸 세로로 놓고 위아래에 마주 앉습니다. 어느 쪽이든 칸 비율은 자기 시점에서 1 : 1.1 — 코마가 세로로 긴 실물 비율을 유지합니다.</p>
-    </div>
-    <div class="card">
-      <h4>글자도 각자에게 돌립니다</h4>
-      <p>앉은 자리 이름, 손패 개수, 남은 시간이 각 플레이어 쪽으로 돌아가 있습니다. 승패 알림과 다시 두기 버튼은 <b>같은 것을 양쪽에 한 벌씩</b> 띄웁니다 — 마주 앉은 게임에서 한쪽만 읽히는 알림은 절반이 못 보는 알림입니다.</p>
-    </div>
-    <div class="card">
-      <h4>손패는 바깥쪽에</h4>
-      <p>각자 자기 앞, 판 바깥에 손패가 쌓입니다. 선공은 자기 쪽 끝에서 안쪽으로, 후공은 그 <b>180도 회전 대칭</b>으로 — 가로든 세로든 규칙은 같습니다. 손에 든 기물도 자기 방향을 보고 있어 무엇을 쥐고 있는지 바로 읽힙니다.</p>
-    </div>
-  </div>
-</section>
-
-<section class="block">
-  <h2>착수와 소리</h2>
-  <p class="lede">나무가 나무에 닿는 순간에만 소리가 납니다. 끌고 가는 동안은 조용하고, 내려놓을 때 한 번 울립니다.</p>
-  <table class="tbl">
-    <tr><th>소리</th><th>언제</th><th>합성 방식</th></tr>
-    <tr><td>탁</td><td>놓을 때</td><td>삼각파 <code>185Hz</code> + 사인 <code>460Hz</code>의 빠른 감쇠(나무 몸통)에, 대역통과 <code>2kHz</code>를 통과한 30ms 노이즈(부딪는 순간)를 겹칩니다. 칠 때마다 음정을 ±6% 흔들어 같은 소리가 반복되지 않습니다. 끌어서 놓으면 세기를 낮춰 씁니다.</td></tr>
-    <tr><td>들기 / 손패 착지</td><td>집을 때 / 잡은 말이 도착할 때</td><td>같은 나무 소리를 음정만 올리고 세기를 낮춰 씁니다. 판 위가 아니라 옆에서 난 소리로 들립니다.</td></tr>
-    <tr><td>초읽기</td><td>남은 5초부터</td><td>1초마다 아주 짧은 고음 딸깍. 마지막 1초는 음정을 한 단계 더 올립니다.</td></tr>
-    <tr><td>승격</td><td>병아리가 닭이 될 때</td><td>짧은 딸깍 두 번 — 뒤집어 다시 놓는 동작입니다.</td></tr>
-  </table>
-  <ul class="notes">
-    <li><b>오디오 파일이 하나도 없습니다.</b> 전부 Web Audio로 그 자리에서 만듭니다. 용량이 0이고 매번 조금씩 다른 소리가 납니다.</li>
-    <li><b>브라우저는 첫 터치 전에 소리를 못 냅니다.</b> 자동 재생 정책 때문에 첫 탭에서 오디오를 깨우므로 첫 수의 소리만 아주 미세하게 늦을 수 있습니다.</li>
-    <li><b>드롭도 됩니다.</b> 손패의 말을 탭하면 놓을 수 있는 빈 칸이 전부 뜹니다. 같은 열에 병아리 둘도, 맨 끝줄도, 드롭 외통도 허용하고, 드롭한 병아리는 승격하지 않습니다.</li>
-  </ul>
-</section>
-
-<section class="block">
-  <h2>설계 기록</h2>
-  <p class="lede">여기까지 오면서 검토한 것들. 고른 것과 버린 것이 같이 들어 있습니다.</p>
-  <ul class="notes">
-    <li><a href="docs/design/directions.html"><b>방향 3종</b></a> — 나무와 먹 / 원과 적목 / 밤과 빛</li>
-    <li><a href="docs/design/koma-test.html"><b>코마 적용</b></a> — 라인아트를 오각 코마에</li>
-    <li><a href="docs/design/frames.html"><b>프레임과 표시</b></a> — 오각 6종 · 사각 3종</li>
-    <li><a href="docs/design/wood.html"><b>나뭇결</b></a> — 무결부터 실사 목재 7종까지</li>
-    <li><a href="docs/rules.md"><b>규칙 문서</b></a> — 출처와 구현 확정 사항</li>
-  </ul>
-  <p class="lede" style="margin-top:var(--s3)">목재 텍스처 · <a href="https://polyhaven.com/textures/wood">Poly Haven</a>, CC0<br>
-  체스 기물 · <a href="https://commons.wikimedia.org/wiki/User:Cburnett">Cburnett</a>, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a><br>
-  원작 · どうぶつしょうぎ — 규칙 키타오 마도카, 그림 후지타 마이코, 2008<br>
-  소스 · <a href="https://github.com/yoshi8867/mini-shogi">github.com/yoshi8867/mini-shogi</a></p>
 </section>
   </div>
 </aside>
@@ -1093,12 +1050,16 @@ banner.querySelectorAll(".again").forEach(b =>
     e.stopPropagation();
     if (ONLINE()) netTell("rematch"); else start();
   }));
-$("#reset").addEventListener("click", () => {
-  if (!ONLINE()) return start();
-  /* 두던 중에 나가면 진 것으로 처리된다. 물어보고 나간다. */
-  if (!over && netPly > 0 && !confirm("두던 중입니다. 나가면 패로 처리됩니다. 나갈까요?")) return;
-  netLeave();
-});
+/* 두던 중에 나가면 진 것으로 처리된다. 물어보고 나간다.
+   나가기는 목록으로 돌려보내고, 오프라인은 그냥 판으로 돌려보낸다. */
+function quitOnline(toList){
+  if (!ONLINE()) return true;
+  if (!over && netPly > 0 && !confirm("두던 중입니다. 나가면 패로 처리됩니다. 나갈까요?")) return false;
+  netLeave(!toList);
+  if (!toList) netOpenPanel(false);
+  return true;
+}
+$("#leaveBtn").addEventListener("click", () => quitOnline(true));
 /* ═══ 기물 껍데기 ═══
    기본은 체스. 같은 기물을 일곱 번 연속 두드리면 바뀐다 — 버튼으로 내놓지 않는다.
      체스에서 킹 x7      → 동물
@@ -1435,8 +1396,7 @@ function netRecv(msg){
       forms({}); netOpenPanel(false); netSay("");
       clockHold();                        // 상대가 올 때까지는 시계를 세워 둔다
       document.body.classList.remove("ai");
-      nel("reset").textContent = "나가기";
-      applyOrient();
+      applyOrient(); paintHud();
       break;
     case "state":   netState(msg); break;
     case "moved":   netMoved(msg); break;
@@ -1529,8 +1489,7 @@ function netLeave(quiet){
   if (ONLINE()) netTell("leave");
   vs = "human"; mySide = 0; serverLeft = null; netCode = "";
   netPeople = [null, null];
-  nel("reset").textContent = "처음으로";
-  applyOrient();
+  applyOrient(); paintHud();
   if (!quiet) netOpenPanel(true);
   start();
 }
@@ -1566,14 +1525,27 @@ nel("netAsk").addEventListener("submit", e => {
   netTell("join", {code: askCode, pin: pin});
 });
 
-$("#vsBtn").addEventListener("click", e => {
-  if (ONLINE()) netLeave(true);
-  vs = vs === "ai" ? "human" : "ai";
+/* 먼저 오프라인/온라인을 고르고, 오프라인이면 상대를 고른다.
+   지금 무엇을 두고 있는지가 버튼에 그대로 드러나야 한다 */
+function paintHud(){
+  const on = ONLINE();
+  $("#offBtn").classList.toggle("on", !on);
+  $("#netBtn").classList.toggle("on", on);
+  $("#segFoe").hidden = on;
+  $("#duoBtn").classList.toggle("on", !on && vs === "human");
+  $("#aiBtn").classList.toggle("on",  !on && vs === "ai");
+  $("#leaveBtn").hidden = !on;
+}
+function setFoe(who){
+  if (!quitOnline()) return;              // 온라인이면 먼저 자리를 뜬다
+  vs = who;
   document.body.classList.toggle("ai", vs === "ai");
-  e.currentTarget.setAttribute("aria-pressed", String(vs === "ai"));
-  e.currentTarget.textContent = vs === "ai" ? "혼자 두기" : "둘이 두기";
+  paintHud();
   start();
-});
+}
+$("#duoBtn").addEventListener("click", () => { if (!ONLINE() && vs === "human") return; setFoe("human"); });
+$("#aiBtn") .addEventListener("click", () => { if (!ONLINE() && vs === "ai")    return; setFoe("ai"); });
+$("#offBtn").addEventListener("click", () => { netOpenPanel(false); quitOnline(false); });
 /* 화면 비율이 배치를 정한다 */
 function applyOrient(){
   LAND = !ONLINE() && innerWidth >= innerHeight;
@@ -1592,6 +1564,7 @@ addEventListener("orientationchange", () => setTimeout(applyOrient, 80));
 if (window.ResizeObserver){ const ro = new ResizeObserver(() => measure()); ro.observe(stage); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
 applyOrient();
+paintHud();
 start();
 applyBoardWood();
 requestAnimationFrame(applyOrient);
