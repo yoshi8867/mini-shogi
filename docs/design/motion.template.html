@@ -644,6 +644,14 @@ function clockShow(){
   });
 }
 function clockStop(){ if (tid){ clearInterval(tid); tid = null; } }
+/* 상대를 기다리는 동안에는 시계를 세워 둔다. 혼자 있는 사람의 시간을 깎을
+   이유가 없다 — 서버도 그렇게 본다. 숫자는 처음 값으로 되돌려 보여 준다. */
+function clockHold(){
+  clockStop();
+  if (!limit()) return;
+  [0,1].forEach(i => $("#clk"+i).style.display = "");
+  left = limit(); lastTick = -1; clockShow();
+}
 function clockStart(){
   clockStop();
   if (vs === "ai" && turn === AI) return;   // AI 를 재촉하지 않는다
@@ -1260,7 +1268,8 @@ function netConnect(after){
   if (sock && sock.readyState === 1) return after && after();
   if (sock && sock.readyState === 0)
     return sock.addEventListener("open", () => after && after(), {once:true});
-  netSay("서버를 깨우는 중입니다 — 무료 인스턴스라 처음엔 1분쯤 걸릴 수 있습니다…");
+  if (!redial)                            // 다시 붙는 중이면 그 쪽 안내를 지우지 않는다
+    netSay("서버를 깨우는 중입니다 — 무료 인스턴스라 처음엔 1분쯤 걸릴 수 있습니다…");
   try { sock = new WebSocket(SERVER); }
   catch (err) { return netSay("서버 주소가 잘못됐습니다."); }
   sock.addEventListener("open", () => {
@@ -1273,10 +1282,36 @@ function netConnect(after){
     netRecv(m);
   });
   sock.addEventListener("close", () => {
-    sock = null; rows = []; showList();
-    if (ONLINE()) log.innerHTML = "<b>연결이 끊겼습니다</b> · 온라인 버튼으로 다시 들어오세요";
+    sock = null; rows = []; clockStop(); showList();
+    if (!ONLINE()) return;
+    /* 서버가 다시 뜨면 대국은 사라진다 — 메모리에만 있으니까. 가만히 두면
+       영영 "상대를 기다립니다"에 머문다. 목록으로 데리고 나온다. */
+    netLeave(true);
+    netOpenPanel(true);
+    redial = 0;
+    setTimeout(netRedial, 600);
   });
-  sock.addEventListener("error", () => netSay("연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요."));
+  sock.addEventListener("error", () => {
+    if (!redial) netSay("연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요.");
+  });
+}
+
+/* 다시 붙어 본다. 서버가 새로 뜨는 중이면 한 번에 안 붙는다 — 무료
+   인스턴스는 깨어나는 데만 1분쯤 걸린다. 몇 번 두드려 보고 물러선다. */
+let redial = 0;
+function netRedial(){
+  if (sock) return;
+  if (++redial > 6){
+    redial = 0;
+    return netSay("서버에 닿지 않습니다. 온라인 버튼으로 다시 시도해 주세요.");
+  }
+  netSay("연결이 끊겨 대국이 닫혔습니다. 다시 붙는 중입니다… (" + redial + "/6)");
+  netConnect(() => {
+    redial = 0;
+    netSay("대국이 닫혔습니다. 다시 열어 주세요.");
+    netTell("list");
+  });
+  setTimeout(netRedial, 4000);
 }
 const netTell = (t, o) => { if (sock && sock.readyState === 1)
   sock.send(JSON.stringify(Object.assign({t}, o || {}))); };
@@ -1398,6 +1433,7 @@ function netRecv(msg){
       vs = "online"; mySide = msg.side; netCode = msg.code; netPly = 0;
       try { sessionStorage.setItem("shogi-" + msg.code, msg.token); } catch (e) {}
       forms({}); netOpenPanel(false); netSay("");
+      clockHold();                        // 상대가 올 때까지는 시계를 세워 둔다
       document.body.classList.remove("ai");
       nel("reset").textContent = "나가기";
       applyOrient();
@@ -1440,7 +1476,10 @@ function netSync(){
     if (!same) netLoad(st);                 // 어긋났으면 화면을 버리고 다시 그린다
     else { turn = st.turn; updateTurn(); }
     paintNames();
-    if (!st.ready) log.innerHTML = "대국 <b>" + netCode + "</b> · 상대를 기다립니다";
+    if (!st.ready){
+      clockHold();
+      log.innerHTML = "대국 <b>" + netCode + "</b> · 상대를 기다립니다";
+    }
     else if (!st.over && !waitOver) clockStart();
   }
   if (waitOver){ const ov = waitOver; waitOver = null; netOver(ov); }
