@@ -10,7 +10,8 @@
 "use strict";
 const EG = require("../shared/engine.js")();
 
-const LIMIT_MS = 30000;                  // 한 수 30초 — 로컬 대국과 같은 규칙
+/* 한 수 30초 — 로컬 대국과 같은 규칙. 시험할 때만 MOVE_MS 로 늘린다. */
+const LIMIT_MS = +(process.env.MOVE_MS || 30000);
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // 헷갈리는 I O 0 1 은 뺀다
 
 function newCode(taken){

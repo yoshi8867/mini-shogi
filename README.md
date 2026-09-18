@@ -157,6 +157,8 @@ python build.py motion      # motion.template.html → motion.html
 | 재접속 | 자리표(token)로 같은 자리에 돌아온다. 새로고침까지 |
 | 기보 | 끝난 판만 Neon 에 남는다. 수가 정수 하나라 `int[]` 한 칸 |
 | AI | 서버는 탐색하지 않는다. 혼자 두기는 그대로 클라이언트 워커 |
+| 시점 | 온라인에서는 판을 눕히지 않고 **내 자리가 늘 아래**로 오게 뒤집는다 |
+| 한 수 제한 | 기본 30초. 시험할 때만 서버에 `MOVE_MS` 로 늘린다 |
 
 ### 돌려보기
 
@@ -166,6 +168,15 @@ npm install
 npm start                 # http://localhost:3000/healthz
 node room.test.js         # 심판 규칙
 node ws.test.js           # 서버를 띄워 소켓으로 한 판 끝까지
+```
+
+### 어디에 붙는가
+
+클라이언트는 기본적으로 `wss://mini-shogi-server.onrender.com/ws` 를 본다.
+로컬에서는 `ws://<호스트>:3000/ws` 로 간다. 둘 다 아닐 때는 주소 뒤에 붙인다:
+
+```
+index.html?server=ws://127.0.0.1:3001/ws
 ```
 
 `DATABASE_URL` 은 `server/.env` 에 둔다(`\.env.example` 참고). **커밋하지 않는다.**

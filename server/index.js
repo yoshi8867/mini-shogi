@@ -6,6 +6,7 @@
    Render 무료 인스턴스에서도 논다.
 
    HTTP  GET /healthz  깨우기용. 상태를 JSON 으로 돌려준다
+         GET /stats    얼마나 뒀는지 집계
          GET /         사람이 열었을 때 볼 한 줄
    WS    /ws           대국
    ══════════════════════════════════════════════════════════════════════ */
@@ -35,7 +36,7 @@ function record(room){
   if (!room.over || room.saved) return;
   room.saved = true;
   db.saveGame({code: room.code, first: room.first, winner: room.over.winner,
-               why: room.over.why, moves: room.moves, startedAt: room.startedAt})
+               why: room.over.why, plies: room.ply, startedAt: room.startedAt})
     .catch(() => {});
 }
 
@@ -73,6 +74,19 @@ const server = http.createServer((req, res) => {
     const t = setTimeout(() => once({games: null}), 1500);
     db.count().then(n => { clearTimeout(t); once({games: n}); })
               .catch(() => { clearTimeout(t); once({games: null}); });
+    return;
+  }
+
+  if (url === "/stats"){
+    if (!db.enabled()){
+      res.writeHead(503, {"content-type": "application/json; charset=utf-8"});
+      return res.end(JSON.stringify({ok: false, why: "db off"}));
+    }
+    db.stats().then(s => {
+      res.writeHead(s ? 200 : 503, {"content-type": "application/json; charset=utf-8",
+                                    "cache-control": "no-store"});
+      res.end(JSON.stringify(s ? {ok: true, ...s} : {ok: false, why: "db error"}));
+    });
     return;
   }
 

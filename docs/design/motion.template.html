@@ -146,6 +146,31 @@ body.portrait .grid{grid-template-columns:repeat(3,1fr);grid-template-rows:repea
 .bmsg.a{transform:rotate(-90deg)} .bmsg.b{transform:rotate(90deg)}
 body.portrait .banner{flex-direction:column;gap:7%}
 body.portrait .bmsg.a{transform:none} body.portrait .bmsg.b{transform:rotate(180deg)}
+/* 방 패널 */
+.net-scrim{position:fixed;inset:0;z-index:43;background:rgba(0,0,0,.55)}
+.net{position:fixed;z-index:44;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(420px,92vw);background:var(--wall-2);border:1px solid var(--wall-line);
+  border-radius:6px;padding:var(--s3);box-shadow:0 22px 60px rgba(0,0,0,.55)}
+.net h3{font-family:'Gowun Batang',serif;font-size:21px;margin:0 0 var(--s1)}
+.net-msg{margin:0 0 var(--s2);font-size:13.5px;color:var(--chalk-dim);min-height:2.8em}
+.net-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.net-or{font-size:12px;color:var(--chalk-dim)}
+.net input{flex:1;min-width:88px;font:700 18px/1 'JetBrains Mono',monospace;
+  letter-spacing:.22em;text-transform:uppercase;text-align:center;padding:11px 8px;
+  background:var(--wall);color:var(--chalk);border:1px solid var(--wall-line);border-radius:4px}
+.net-go{font:700 13px/1 'Gothic A1',system-ui,sans-serif;cursor:pointer;
+  background:var(--mark);color:#17181a;border:0;border-radius:999px;padding:12px 16px}
+.net-go:hover{background:#e9d494}
+.net-share{margin:var(--s2) 0 0;font-size:13px;color:var(--chalk)}
+.net-share b{font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:.2em;
+  color:var(--mark)}
+.net-close{margin-top:var(--s2);background:none;border:0;color:var(--chalk-dim);
+  font:700 12px/1 'Gothic A1',system-ui,sans-serif;cursor:pointer;padding:6px 0}
+.net-close:hover{color:var(--chalk)}
+
+/* 온라인 — 마주 앉지 않는다. 글자를 돌리지 않고 알림도 한 벌만 띄운다 */
+body.online .t1 .tag>div{transform:translate(-50%,-50%)}
+body.online .bmsg.b{display:none}
 .banner.draw .bmsg{background:#5c4a33}
 
 /* ════ 조작 패널 ════ */
@@ -273,12 +298,27 @@ body.ai .t1 .clock{display:none}        /* AI 차례에는 시계를 재지 않�
   <div class="bar">
     <div class="log" id="log">기물을 탭하세요.</div>
     <div class="hud" id="hud">
+      <button class="hud-btn" id="netBtn">온라인</button>
       <button class="hud-btn" id="vsBtn" aria-pressed="false">둘이 두기</button>
       <button class="hud-btn" id="sndBtn" aria-pressed="true">소리 켜짐</button>
       <button class="hud-btn" id="reset">처음으로</button>
       <button class="hud-btn primary" id="rulesFab" aria-expanded="false" aria-controls="rulesDrawer">규칙</button>
     </div>
   </div>
+</div>
+<div class="net-scrim" id="netScrim" hidden></div>
+<div class="net" id="net" hidden role="dialog" aria-label="온라인 대전">
+  <h3>온라인 대전</h3>
+  <p class="net-msg" id="netMsg">방을 만들어 코드를 알려주거나, 받은 코드로 들어갑니다.</p>
+  <div class="net-row">
+    <button class="net-go" id="netNew">방 만들기</button>
+    <span class="net-or">또는</span>
+    <input id="netCode" maxlength="4" placeholder="코드" autocomplete="off"
+           spellcheck="false" aria-label="방 코드">
+    <button class="net-go" id="netJoin">들어가기</button>
+  </div>
+  <p class="net-share" id="netShare" hidden>방 코드 <b></b> · 상대에게 알려주세요</p>
+  <button class="net-close" id="netClose">닫기</button>
 </div>
 <div class="rules-scrim" id="rulesScrim" hidden></div>
 <aside class="rules-drawer" id="rulesDrawer" hidden aria-label="규칙과 설계 기록">
@@ -391,6 +431,14 @@ const layer = $("#layer"), hints = $("#hints"), grid = $("#grid"),
 const COLS = 3, ROWS = 4;               // 논리: 3열 4행
 /* 화면이 가로면 눕히고(4x3), 세로면 세운다(3x4). */
 let LAND = true;
+/* 온라인은 각자 자기 기기다. 마주 앉을 일이 없으니 판을 눕히지 않고,
+   내 자리가 늘 아래로 오도록 판을 통째로 뒤집는다 — 후공도 자기 앞이 아래다. */
+let vs = "human";                       // human | ai | online
+let mySide = 0;                         // 온라인에서 내가 앉은 자리
+let serverLeft = null;                  // 서버가 알려준 남은 시간(초)
+const ONLINE = () => vs === "online";
+const FLIP   = () => ONLINE() && mySide === 1;
+const trayOf = s => FLIP() ? 1 - s : s; // 자리 → 화면에서 그 자리가 쓰는 띠
 const SCOLS = () => LAND ? ROWS : COLS;
 const SROWS = () => LAND ? COLS : ROWS;
 const ART  = {L:["a-lion","a-tiger"], G:["a-giraffe","a-giraffe"], E:["a-elephant","a-elephant"],
@@ -422,7 +470,9 @@ function snapshot(t){
   hand.forEach((hh, s) => hh.forEach(p => hd[s][EG.HSLOT[TIDX[p.t]]]++));
   return {b, hand:hd, turn: t === undefined ? turn : t};
 }
-const ROT = s => LAND ? (s === 0 ? -90 : 90) : (s === 0 ? 0 : 180);
+const ROT = s => ONLINE() ? (s === mySide ? 0 : 180)
+              : LAND     ? (s === 0 ? -90 : 90)
+                         : (s === 0 ? 0 : 180);
 const backRank = s => s === 0 ? 0 : ROWS - 1;
 
 let cells, hand, turn, sel, busy, over, seen;
@@ -516,7 +566,8 @@ function clockStart(){
   if (vs === "ai" && turn === AI) return;   // AI 를 재촉하지 않는다
   if (!limit() || over){ [0,1].forEach(i => $("#clk"+i).style.display = limit() ? "" : "none"); return; }
   [0,1].forEach(i => $("#clk"+i).style.display = "");
-  left = limit(); lastTick = -1; clockShow();
+  left = (ONLINE() && serverLeft !== null) ? serverLeft : limit();
+  lastTick = -1; clockShow();
   let prev = performance.now();
   tid = setInterval(() => {
     const now = performance.now();
@@ -527,7 +578,8 @@ function clockStart(){
     clockShow();
     if (left <= 0){
       clockStop();
-      finish(1 - turn);                      // 시간 초과
+      if (ONLINE()) return;                  // 시간 초과 판정은 서버 몫이다
+      finish(1 - turn);
     }
   }, 100);
 }
@@ -537,8 +589,12 @@ const PAD = 2, GAP = 2, FIT = .84;
 let cw = 60, ch = 55, bx = 0, by = 0;
 const ew = () => (LAND ? ch : cw) * FIT;   // 눕히면 코마의 가로/세로가 뒤바뀐다
 const eh = () => (LAND ? cw : ch) * FIT;
-const scr = (r,c)   => LAND ? {sc: r, sr: COLS - 1 - c} : {sc: c, sr: r};
-const lgc = (sr,sc) => LAND ? {r: sc, c: COLS - 1 - sr} : {r: sr, c: sc};
+const scr = (r,c)   => LAND   ? {sc: r, sr: COLS - 1 - c}
+                    : FLIP() ? {sc: COLS - 1 - c, sr: ROWS - 1 - r}
+                             : {sc: c, sr: r};
+const lgc = (sr,sc) => LAND   ? {r: sc, c: COLS - 1 - sr}
+                    : FLIP() ? {r: ROWS - 1 - sr, c: COLS - 1 - sc}
+                             : {r: sr, c: sc};
 function cellTopLeft(r,c){
   const {sc, sr} = scr(r,c);
   return {x: bx + sc*(cw+GAP), y: by + sr*(ch+GAP)};
@@ -549,7 +605,8 @@ function sqPos(r,c,side){
 }
 function handPos(side, i){
   const sr = stage.getBoundingClientRect();
-  const slot = document.getElementById("slot" + side).getBoundingClientRect();
+  const tray = trayOf(side);
+  const slot = document.getElementById("slot" + tray).getBoundingClientRect();
   const k = .78;
   const vw = (LAND ? eh() : ew()) * k, vh = (LAND ? ew() : eh()) * k;  // 화면상 크기
   const gy = vh * .18, gx = vw * .14;
@@ -559,9 +616,9 @@ function handPos(side, i){
              row = i % per; col = Math.floor(i / per); }
   else     { const per = Math.max(1, Math.floor((slot.width  + gx) / (vw + gx)));
              col = i % per; row = Math.floor(i / per); }
-  const cx = side === 0 ? slot.right - sr.left - vw/2 - col*(vw+gx)
+  const cx = tray === 0 ? slot.right - sr.left - vw/2 - col*(vw+gx)
                         : slot.left  - sr.left + vw/2 + col*(vw+gx);
-  const cy = side === 0 ? slot.bottom - sr.top - vh/2 - row*(vh+gy)
+  const cy = tray === 0 ? slot.bottom - sr.top - vh/2 - row*(vh+gy)
                         : slot.top    - sr.top + vh/2 + row*(vh+gy);
   return {x: cx - ew()/2, y: cy - eh()/2, rot: ROT(side), s: k};
 }
@@ -663,14 +720,16 @@ function say(msg, why, hold){
 /* 알림은 두 벌이고 각각 한 사람을 보고 있다. 같은 말을 두 번 띄울 게 아니라
    이긴 쪽에는 `승리`, 진 쪽에는 `패배` 를 보여준다. 이유는 적지 않는다. */
 function finish(winner){                 // winner: 0 | 1 | null(무승부)
+  if (over) return;                      // 서버 알림과 로컬 판정이 겹칠 수 있다
   over = true; busy = false;
   clockStop(); deselect();
   const draw = winner === null;
   banner.classList.toggle("draw", draw);
   banner.classList.add("end", "on");
   const word = s => draw ? "무승부" : s === winner ? "승리" : "패배";
-  banner.querySelector(".bmsg.a .txt").textContent = word(0);
-  banner.querySelector(".bmsg.b .txt").textContent = word(1);
+  const box = s => trayOf(s) === 0 ? ".bmsg.a" : ".bmsg.b";
+  banner.querySelector(box(0) + " .txt").textContent = word(0);
+  banner.querySelector(box(1) + " .txt").textContent = word(1);
   banner.querySelectorAll(".why").forEach(e => e.textContent = "");
   document.querySelectorAll(".tray").forEach(t => t.classList.remove("on"));
   log.innerHTML = draw ? "<b>무승부</b>" : `<b>${SIDE(winner)} 승리</b>`;
@@ -713,10 +772,11 @@ function relayoutHand(side){
   updateCounts();
 }
 function updateCounts(){
-  [0,1].forEach(s => $("#cnt"+s).textContent = hand[s].length ? "손패 " + hand[s].length : "");
+  [0,1].forEach(s => $("#cnt"+trayOf(s)).textContent = hand[s].length ? "손패 " + hand[s].length : "");
 }
 function pick(p){
   if (busy || over || p.s !== turn) return;
+  if (ONLINE() && turn !== mySide) return;
   audio();
   if (sel === p){ deselect(); return; }
   deselect();
@@ -742,8 +802,16 @@ async function toHand(victim, captor){
   await hop(victim.el, handPos(captor, hand[captor].length - 1), {lift:.14, ms:330});
   takSoft(); updateCounts();
 }
-async function doMove(r, c, mv, dragged){
+async function doMove(r, c, mv, dragged, server){
   if (busy || over) return;
+  /* 온라인에서 내 수는 제안일 뿐이다. 서버가 확정해 돌려준 뒤에 움직인다 —
+     되돌릴 일이 없으니 되돌리는 코드도 없다. */
+  if (ONLINE() && !server){
+    const p0 = cells[r][c];
+    if (turn !== mySide || !p0) return;
+    if (dragged) place(p0.el, sqPos(r, c, p0.s), true);   // 끌어다 놓은 자리에서 제자리로
+    return netSend(r*COLS + c, mv.r*COLS + mv.c, 0);
+  }
   busy = true; deselect();
   const p = cells[r][c];
   const victim = mv.take, dest = sqPos(mv.r, mv.c, p.s);
@@ -787,10 +855,15 @@ async function doMove(r, c, mv, dragged){
   if (over) return;
   endTurn();
 }
-async function doDrop(p, r, c, dragged){
+async function doDrop(p, r, c, dragged, server){
   if (busy || over) return;
   const at = handIndex(p);
   if (!at || cells[r][c]) return;
+  if (ONLINE() && !server){
+    if (turn !== mySide) return;
+    if (dragged) place(p.el, handPos(at[0], at[1]), true);
+    return netSend(-1, r*COLS + c, TIDX[p.t]);
+  }
   busy = true; deselect();
   hand[at[0]].splice(at[1], 1);
   cells[r][c] = p;
@@ -812,16 +885,23 @@ function endTurn(){
   busy = false;
   clockStart();
   maybeAI();
+  if (ONLINE()) netSync();
+}
+/* 이름표는 자리가 아니라 화면의 띠를 따른다. 온라인이면 나/상대로 부른다 */
+function paintNames(){
+  [0,1].forEach(s => $("#tray" + trayOf(s) + " .nm").textContent =
+    ONLINE() ? (s === mySide ? "나" : "상대") : SIDE(s));
 }
 function updateTurn(){
-  $("#tray0").classList.toggle("on", turn === 0 && !over);
-  $("#tray1").classList.toggle("on", turn === 1 && !over);
+  $("#tray0").classList.toggle("on", trayOf(turn) === 0 && !over);
+  $("#tray1").classList.toggle("on", trayOf(turn) === 1 && !over);
 }
 
 /* ═══ 끌기 ═══ */
 let drag = null;
 function onGrab(e, p){
   secretTap(p);
+  if (ONLINE() && p.s !== mySide) return;
   if (busy || over || p.s !== turn){ pick(p); return; }
   audio();
   const [r,c] = find(p);
@@ -888,7 +968,7 @@ function render(){
     const p = cells[r][c];
     if (p){ build(p); place(p.el, sqPos(r,c,p.s), true); }
   }
-  [0,1].forEach(s => $("#tray" + s + " .nm").textContent = SIDE(s));
+  paintNames();
   paintSkins();
   updateTurn(); updateCounts(); measure();
   seen.set(posKey(), 1);
@@ -911,8 +991,15 @@ stage.addEventListener("pointerdown", e => {
   if (e.target === e.currentTarget || e.target.classList.contains("sqr")) deselect();
 });
 banner.querySelectorAll(".again").forEach(b =>
-  b.addEventListener("click", e => { e.stopPropagation(); start(); }));
-$("#reset").addEventListener("click", () => start());
+  b.addEventListener("click", e => {
+    e.stopPropagation();
+    if (ONLINE()) netAsk("rematch"); else start();
+  }));
+$("#reset").addEventListener("click", () => {
+  if (!ONLINE()) return start();
+  if (over) return netAsk("rematch");
+  if (confirm("기권하시겠습니까?")) netAsk("resign");
+});
 /* ═══ 기물 껍데기 ═══
    기본은 체스. 같은 기물을 일곱 번 연속 두드리면 바뀐다 — 버튼으로 내놓지 않는다.
      체스에서 킹 x7      → 동물
@@ -956,7 +1043,7 @@ function paintSkins(){
                      p.el.classList.add("sk-" + skin[p.s]); };
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++)
     if (cells[r][c] && cells[r][c].el) put(cells[r][c]);
-  hand.forEach(hh => hh.forEach(put));
+  hand.forEach(hh => hh.forEach(q => { if (q.el) put(q); }));
 }
 function setSkin(side, s, quiet){
   const apply = () => {
@@ -983,7 +1070,7 @@ function secretTap(p){
    AI 는 늘 위(가로면 왼쪽) 자리다. 세기는 껍데기가 정한다 —
    AI 쪽이 야수면 어려움, 아니면 보통. 난이도 버튼을 따로 두지 않는다. */
 const AI = 1;
-let vs = "human", worker = null, thinking = false, era = 0, askedAt = 0, watch = 0;
+let worker = null, thinking = false, era = 0, askedAt = 0, watch = 0;
 const aiHard = () => skin[AI] === "beast";
 function engine(){
   if (worker !== null) return worker;
@@ -1032,7 +1119,178 @@ function reply(r){
     }
   }, delay);
 }
+
+/* ═══ 온라인 대전 ═══════════════════════════════════════════════════
+   서버가 심판이다. 여기서 하는 일은 둘뿐 — 내 수를 제안으로 보내고,
+   서버가 확정해 돌려준 사실만 화면에 옮긴다. 낙관적으로 먼저 두지 않으니
+   되돌리는 코드가 아예 없다. 한 수 30초짜리 게임에서 왕복 지연은 안 보인다. */
+const NETQ = new URLSearchParams(location.search);
+const SERVER = NETQ.get("server") || (
+  /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname)
+    ? "ws://" + (location.hostname || "127.0.0.1") + ":3000/ws"
+    : "wss://mini-shogi-server.onrender.com/ws");
+const WHY = {catch:"캐치", try:"트라이", repeat:"같은 국면 3회", stuck:"둘 수가 없음",
+             resign:"기권", time:"시간 초과"};
+const NETERR = {nocode:"그런 방이 없습니다", full:"이미 두 사람이 있습니다",
+                taken:"그 자리는 사용 중입니다", turn:"내 차례가 아닙니다",
+                illegal:"둘 수 없는 수입니다", stale:"수가 엇갈렸습니다",
+                over:"이미 끝난 판입니다", waiting:"상대를 기다리는 중입니다"};
+
+let sock = null, netPly = 0, netCode = "";
+const nel = id => document.getElementById(id);
+const netSay  = s => { nel("netMsg").textContent = s; };
+const netOpen = v => { nel("net").hidden = !v; nel("netScrim").hidden = !v; };
+
+function netConnect(after){
+  if (sock && sock.readyState === 1) return after && after();
+  if (sock && sock.readyState === 0)
+    return sock.addEventListener("open", () => after && after(), {once:true});
+  netSay("서버를 깨우는 중입니다 — 무료 인스턴스라 처음엔 1분쯤 걸릴 수 있습니다…");
+  try { sock = new WebSocket(SERVER); }
+  catch (err) { return netSay("서버 주소가 잘못됐습니다."); }
+  sock.addEventListener("open", () => { netSay("연결됐습니다."); after && after(); });
+  sock.addEventListener("message", e => {
+    let m; try { m = JSON.parse(e.data); } catch (err) { return; }
+    netRecv(m);
+  });
+  sock.addEventListener("close", () => {
+    sock = null;
+    if (ONLINE()) log.innerHTML = "<b>연결이 끊겼습니다</b> · 온라인 버튼으로 다시 들어오세요";
+  });
+  sock.addEventListener("error", () => netSay("연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요."));
+}
+function netJoin(code){
+  netConnect(() => sock.send(JSON.stringify({
+    t: "join", code: code || "",
+    token: code ? sessionStorage.getItem("shogi-" + code) : null})));
+}
+function netAsk(t){ if (sock && sock.readyState === 1) sock.send(JSON.stringify({t: t})); }
+
+/* 내 손이 만든 착수를 엔진의 수 하나로 옮겨 보낸다 */
+function netSend(from, to, drop){
+  const m = EG.gen(snapshot()).find(x => EG.to(x) === to &&
+      (drop ? EG.drop(x) === drop : (!EG.drop(x) && EG.from(x) === from)));
+  if (!m || !sock || sock.readyState !== 1) return;
+  busy = true; deselect();
+  sock.send(JSON.stringify({t:"move", m: m, ply: netPly}));
+}
+
+function netRecv(msg){
+  switch (msg.t){
+    case "seated":
+      vs = "online"; mySide = msg.side; netCode = msg.code; netPly = 0;
+      sessionStorage.setItem("shogi-" + msg.code, msg.token);
+      nel("netShare").hidden = false;
+      nel("netShare").querySelector("b").textContent = msg.code;
+      netSay((msg.side === 0 ? "선공" : "후공") + "으로 앉았습니다.");
+      document.body.classList.remove("ai");
+      applyOrient();
+      break;
+    case "state":   netState(msg); break;
+    case "moved":   netMoved(msg); break;
+    case "over":    waitOver = msg; netSync(); break;
+    case "restart": log.textContent = "새 판입니다."; break;
+    case "peer":
+      log.innerHTML = msg.what === "joined"  ? "<b>상대가 들어왔습니다</b>"
+                    : msg.what === "left"    ? "<b>상대가 나갔습니다</b>"
+                    : msg.what === "rematch" ? "<b>상대가 다시 두자고 합니다</b>" : "";
+      if (msg.what === "joined") netOpen(false);
+      break;
+    case "error":
+      netSay(NETERR[msg.why] || msg.why);
+      if (msg.why === "nocode" || msg.why === "full" || msg.why === "taken") netOpen(true);
+      busy = false;
+      break;
+  }
+}
+
+/* 서버가 내려준 사실과 화면이 다르면 화면을 버리고 다시 그린다 */
+/* 서버 소식은 연출이 도는 중에 들어온다. 그때 판을 갈아엎으면 애니메이션이
+   중간에 끊기고 손패가 어긋난다. 한가해질 때까지 들고 있다가 반영한다. */
+let waitState = null, waitOver = null;
+function netState(st){
+  netPly = st.ply; serverLeft = st.left / 1000; first = st.first;
+  waitState = st; netSync();
+}
+function netSync(){
+  if (busy) return;
+  if (waitState){
+    const st = waitState; waitState = null;
+    const mine = cells ? snapshot() : null;
+    const same = mine && mine.turn === st.turn
+      && st.b.every((v, i) => mine.b[i] === v)
+      && [0,1].every(s => st.hand[s].every((n, k) => mine.hand[s][k] === n));
+    if (!same) netLoad(st);                 // 어긋났으면 화면을 버리고 다시 그린다
+    else { turn = st.turn; updateTurn(); }
+    if (!st.ready) log.innerHTML = "방 <b>" + netCode + "</b> · 상대를 기다립니다";
+    else {
+      netOpen(false);                       // 둘이 앉았으면 방 패널은 비켜준다
+      if (!st.over && !waitOver) clockStart();
+    }
+  }
+  if (waitOver){ const ov = waitOver; waitOver = null; netOver(ov); }
+}
+function netLoad(st){
+  clockStop();
+  cells = Array.from({length:ROWS}, () => Array(COLS).fill(null));
+  hand = [[],[]]; sel = null; busy = false; over = false; seen = new Map();
+  turn = st.turn; first = st.first;
+  for (let i = 0; i < 12; i++){
+    const v = st.b[i]; if (!v) continue;
+    cells[(i/COLS)|0][i%COLS] = {t: TCHR[Math.abs(v)], s: v > 0 ? 0 : 1, el: null};
+  }
+  render();                                   // 판·손패·알림을 비우고 다시 그린다
+  /* 손패는 render 가 끝난 뒤에 얹는다. 그 전에 넣으면 아직 el 이 없다 */
+  st.hand.forEach((hh, s) => hh.forEach((n, k) => {
+    for (let j = 0; j < n; j++){
+      const q = {t: TCHR[EG.HTYPE[k]], s: s, el: null};
+      hand[s].push(q); build(q); place(q.el, handPos(s, hand[s].length - 1), true);
+    }
+  }));
+  paintSkins(); updateCounts(); updateTurn();
+}
+function netMoved(msg){
+  netPly = msg.ply; serverLeft = msg.left / 1000; busy = false;
+  const m = msg.m, to = EG.to(m), tr = (to / COLS) | 0, tc = to % COLS;
+  let done;
+  if (EG.drop(m)){
+    const p = hand[msg.by].find(q => q.t === TCHR[EG.drop(m)]);
+    done = p && doDrop(p, tr, tc, false, true);
+  } else {
+    const f = EG.from(m), fr = (f / COLS) | 0, fc = f % COLS;
+    const mv = movesOf(fr, fc).find(x => x.r === tr && x.c === tc);
+    done = mv && doMove(fr, fc, mv, false, true);
+  }
+  Promise.resolve(done).then(netSync, netSync);   // 연출이 끝나면 밀린 소식을 본다
+}
+function netOver(ov){
+  finish(ov.winner);
+  log.innerHTML = (ov.winner === null ? "<b>무승부</b>"
+                 : ov.winner === mySide ? "<b>승리</b>" : "<b>패배</b>")
+                + " · " + (WHY[ov.why] || ov.why);
+}
+function netLeave(){
+  if (sock){ sock.close(); sock = null; }
+  vs = "human"; mySide = 0; serverLeft = null; netCode = "";
+  nel("netShare").hidden = true;
+  netOpen(false); applyOrient();
+}
+
+nel("netBtn").addEventListener("click", () => {
+  netOpen(true);
+  if (!ONLINE()) netSay("방을 만들어 코드를 알려주거나, 받은 코드로 들어갑니다.");
+});
+nel("netNew").addEventListener("click", () => netJoin(""));
+nel("netJoin").addEventListener("click", () => {
+  const c = nel("netCode").value.trim().toUpperCase();
+  if (c.length === 4) netJoin(c); else netSay("코드 네 글자를 넣어 주세요.");
+});
+nel("netCode").addEventListener("keydown", e => { if (e.key === "Enter") nel("netJoin").click(); });
+nel("netClose").addEventListener("click", () => netOpen(false));
+nel("netScrim").addEventListener("click", () => netOpen(false));
+
 $("#vsBtn").addEventListener("click", e => {
+  if (ONLINE()) netLeave();
   vs = vs === "ai" ? "human" : "ai";
   document.body.classList.toggle("ai", vs === "ai");
   e.currentTarget.setAttribute("aria-pressed", String(vs === "ai"));
@@ -1041,8 +1299,10 @@ $("#vsBtn").addEventListener("click", e => {
 });
 /* 화면 비율이 배치를 정한다 */
 function applyOrient(){
-  LAND = innerWidth >= innerHeight;
+  LAND = !ONLINE() && innerWidth >= innerHeight;
   document.body.classList.toggle("portrait", !LAND);
+  document.body.classList.toggle("online", ONLINE());
+  if (cells) paintNames();
   measure();
 }
 $("#sndBtn").addEventListener("click", e => {
