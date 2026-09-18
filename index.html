@@ -146,27 +146,82 @@ body.portrait .grid{grid-template-columns:repeat(3,1fr);grid-template-rows:repea
 .bmsg.a{transform:rotate(-90deg)} .bmsg.b{transform:rotate(90deg)}
 body.portrait .banner{flex-direction:column;gap:7%}
 body.portrait .bmsg.a{transform:none} body.portrait .bmsg.b{transform:rotate(180deg)}
-/* 방 패널 */
-.net-scrim{position:fixed;inset:0;z-index:43;background:rgba(0,0,0,.55)}
-.net{position:fixed;z-index:44;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:min(420px,92vw);background:var(--wall-2);border:1px solid var(--wall-line);
-  border-radius:6px;padding:var(--s3);box-shadow:0 22px 60px rgba(0,0,0,.55)}
-.net h3{font-family:'Gowun Batang',serif;font-size:21px;margin:0 0 var(--s1)}
-.net-msg{margin:0 0 var(--s2);font-size:13.5px;color:var(--chalk-dim);min-height:2.8em}
-.net-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.net-or{font-size:12px;color:var(--chalk-dim)}
-.net input{flex:1;min-width:88px;font:700 18px/1 'JetBrains Mono',monospace;
-  letter-spacing:.22em;text-transform:uppercase;text-align:center;padding:11px 8px;
-  background:var(--wall);color:var(--chalk);border:1px solid var(--wall-line);border-radius:4px}
+/* 대국 목록 */
+.net [hidden]{display:none}        /* display 를 준 요소도 hidden 이면 숨는다 */
+.net-scrim{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55)}
+.net{position:fixed;z-index:81;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(440px,94vw);max-height:86vh;overflow:auto;background:var(--wall-2);
+  color:var(--chalk);                      /* 본문은 먹색이다. 여기서 다시 세운다 */
+  border:1px solid var(--wall-line);border-radius:6px;padding:var(--s3);
+  box-shadow:0 22px 60px rgba(0,0,0,.55)}
+.net *{color:inherit}
+.net .net-msg,.net .vs,.net .lab,.net .tagline,.net .net-empty,
+.net .net-close,.net .net-quiet{color:var(--chalk-dim)}
+.net .lock{color:var(--mark)}
+.net .badge{color:#fff}
+.net .badge.gold{color:#2a1f05}
+.net h3,.net b,.net .net-list li{color:var(--chalk)}
+.net-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s2)}
+.net h3{font-family:'Gowun Batang',serif;font-size:21px;margin:0}
+.net-msg{margin:var(--s2) 0 0;font-size:13px;color:var(--chalk-dim);min-height:1.2em}
+.net-row{display:flex;gap:8px;align-items:center;margin-top:var(--s2)}
 .net-go{font:700 13px/1 'Gothic A1',system-ui,sans-serif;cursor:pointer;
-  background:var(--mark);color:#17181a;border:0;border-radius:999px;padding:12px 16px}
+  background:var(--mark);color:#17181a;border:0;border-radius:999px;padding:11px 16px}
 .net-go:hover{background:#e9d494}
-.net-share{margin:var(--s2) 0 0;font-size:13px;color:var(--chalk)}
-.net-share b{font-family:'JetBrains Mono',monospace;font-size:20px;letter-spacing:.2em;
-  color:var(--mark)}
+.net-quiet{font:700 13px/1 'Gothic A1',system-ui,sans-serif;cursor:pointer;
+  background:none;color:var(--chalk-dim);border:1px solid var(--wall-line);
+  border-radius:999px;padding:11px 16px}
+.net-quiet:hover{color:var(--chalk)}
+
+/* 목록 */
+.net-list{list-style:none;margin:var(--s2) 0 0;padding:0;display:flex;
+  flex-direction:column;gap:6px}
+.net-list li{display:flex;align-items:center;gap:9px;padding:11px 12px;
+  background:var(--wall);border:1px solid var(--wall-line);border-radius:4px;
+  font-size:13.5px}
+.net-list li.can{cursor:pointer}
+.net-list li.can:hover{border-color:var(--mark)}
+.net-list li.busy{opacity:.55}
+.net-list .who{flex:1;min-width:0;display:flex;align-items:center;gap:7px;
+  flex-wrap:wrap}
+.net-list .vs{color:var(--chalk-dim);font-size:12px}
+.net-list .tagline{font-size:11px;letter-spacing:.1em;color:var(--chalk-dim);
+  font-family:'JetBrains Mono',monospace;flex:none}
+.net-empty{color:var(--chalk-dim);font-size:13px;padding:var(--s3) 0;text-align:center}
+.lock{font-size:11px;color:var(--mark);flex:none}
+
+/* 나 */
+.net-me{margin-top:var(--s3);padding-top:var(--s2);border-top:1px solid var(--wall-line);
+  display:flex;align-items:center;gap:8px;font-size:13.5px}
+.net-me .lab{font-size:11px;letter-spacing:.14em;color:var(--chalk-dim);
+  font-family:'JetBrains Mono',monospace}
 .net-close{margin-top:var(--s2);background:none;border:0;color:var(--chalk-dim);
   font:700 12px/1 'Gothic A1',system-ui,sans-serif;cursor:pointer;padding:6px 0}
 .net-close:hover{color:var(--chalk)}
+
+/* 비밀번호 — 칸 네 개. 가리지 않는다 */
+.pin{display:flex;gap:8px;margin-top:var(--s2)}
+.pin input{width:46px;height:56px;text-align:center;border-radius:5px;
+  font:700 24px/1 'JetBrains Mono',monospace;background:var(--wall);color:var(--chalk);
+  border:1px solid var(--wall-line);caret-color:var(--mark)}
+.pin input:focus{outline:none;border-color:var(--mark);background:#101113}
+.net-vis{display:flex;gap:var(--s2);margin-top:var(--s2);font-size:13.5px}
+.net-vis label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.net-vis input{accent-color:var(--mark)}
+.net-open,.net-ask{margin-top:var(--s2);padding:var(--s2);border-radius:5px;
+  background:var(--wall);border:1px solid var(--wall-line)}
+
+/* 연승 뱃지 */
+.badge{font:700 10.5px/1 'Gothic A1',system-ui,sans-serif;letter-spacing:.02em;
+  padding:4px 7px;border-radius:999px;color:#fff;white-space:nowrap;flex:none}
+.badge.navy{background:#22347a}
+.badge.crimson{background:#9d1b32}
+.badge.gold{background:linear-gradient(100deg,#8a6a1a,#e8c45c 45%,#8a6a1a);
+  color:#2a1f05;animation:shine 1.8s ease-in-out infinite}
+@keyframes shine{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}
+.tag .badge{font-size:9.5px;padding:3px 6px;margin-left:5px;vertical-align:middle;
+  color:#fff}
+.tag .badge.gold{color:#2a1f05}
 
 /* 온라인 — 마주 앉지 않는다. 글자를 돌리지 않고 알림도 한 벌만 띄운다 */
 body.online .t1 .tag>div{transform:translate(-50%,-50%)}
@@ -307,17 +362,36 @@ body.ai .t1 .clock{display:none}        /* AI 차례에는 시계를 재지 않�
   </div>
 </div>
 <div class="net-scrim" id="netScrim" hidden></div>
-<div class="net" id="net" hidden role="dialog" aria-label="온라인 대전">
-  <h3>온라인 대전</h3>
-  <p class="net-msg" id="netMsg">방을 만들어 코드를 알려주거나, 받은 코드로 들어갑니다.</p>
-  <div class="net-row">
-    <button class="net-go" id="netNew">방 만들기</button>
-    <span class="net-or">또는</span>
-    <input id="netCode" maxlength="4" placeholder="코드" autocomplete="off"
-           spellcheck="false" aria-label="방 코드">
-    <button class="net-go" id="netJoin">들어가기</button>
+<div class="net" id="net" hidden role="dialog" aria-label="대국 목록">
+  <div class="net-head">
+    <h3>대국 목록</h3>
+    <button class="net-go" id="netNew">대국 열기</button>
   </div>
-  <p class="net-share" id="netShare" hidden>방 코드 <b></b> · 상대에게 알려주세요</p>
+
+  <form class="net-open" id="netOpen" hidden>
+    <div class="net-vis">
+      <label><input type="radio" name="vis" value="open" checked> 공개</label>
+      <label><input type="radio" name="vis" value="shut"> 비공개</label>
+    </div>
+    <div class="pin" id="pinNew" hidden aria-label="비밀번호 네 자리"></div>
+    <div class="net-row">
+      <button class="net-go" id="netCreate" type="submit">열기</button>
+      <button class="net-quiet" id="netCancel" type="button">취소</button>
+    </div>
+  </form>
+
+  <form class="net-ask" id="netAsk" hidden>
+    <p class="net-msg">비공개 대국입니다. 비밀번호 네 자리를 넣어 주세요.</p>
+    <div class="pin" id="pinAsk" aria-label="비밀번호 네 자리"></div>
+    <div class="net-row">
+      <button class="net-go" id="netEnter" type="submit">들어가기</button>
+      <button class="net-quiet" id="netBack" type="button">뒤로</button>
+    </div>
+  </form>
+
+  <ul class="net-list" id="netList"></ul>
+  <p class="net-msg" id="netMsg"></p>
+  <div class="net-me" id="netMe"></div>
   <button class="net-close" id="netClose">닫기</button>
 </div>
 <div class="rules-scrim" id="rulesScrim" hidden></div>
@@ -1192,8 +1266,12 @@ function endTurn(){
 }
 /* 이름표는 자리가 아니라 화면의 띠를 따른다. 온라인이면 나/상대로 부른다 */
 function paintNames(){
-  [0,1].forEach(s => $("#tray" + trayOf(s) + " .nm").textContent =
-    ONLINE() ? (s === mySide ? "나" : "상대") : SIDE(s));
+  [0,1].forEach(s => {
+    const el = $("#tray" + trayOf(s) + " .nm");
+    if (!ONLINE()){ el.textContent = SIDE(s); return; }
+    const who = netPeople[s];
+    el.innerHTML = (who ? esc(who.name) : (s === mySide ? "나" : "상대")) + badgeHTML(who);
+  });
 }
 function updateTurn(){
   $("#tray0").classList.toggle("on", trayOf(turn) === 0 && !over);
@@ -1296,12 +1374,13 @@ stage.addEventListener("pointerdown", e => {
 banner.querySelectorAll(".again").forEach(b =>
   b.addEventListener("click", e => {
     e.stopPropagation();
-    if (ONLINE()) netAsk("rematch"); else start();
+    if (ONLINE()) netTell("rematch"); else start();
   }));
 $("#reset").addEventListener("click", () => {
   if (!ONLINE()) return start();
-  if (over) return netAsk("rematch");
-  if (confirm("기권하시겠습니까?")) netAsk("resign");
+  /* 두던 중에 나가면 진 것으로 처리된다. 물어보고 나간다. */
+  if (!over && netPly > 0 && !confirm("두던 중입니다. 나가면 패로 처리됩니다. 나갈까요?")) return;
+  netLeave();
 });
 /* ═══ 기물 껍데기 ═══
    기본은 체스. 같은 기물을 일곱 번 연속 두드리면 바뀐다 — 버튼으로 내놓지 않는다.
@@ -1433,17 +1512,41 @@ const SERVER = NETQ.get("server") || (
     ? "ws://" + (location.hostname || "127.0.0.1") + ":3000/ws"
     : "wss://mini-shogi.onrender.com/ws");
 const WHY = {catch:"캐치", try:"트라이", repeat:"같은 국면 3회", stuck:"둘 수가 없음",
-             resign:"기권", time:"시간 초과"};
-const NETERR = {nocode:"그런 방이 없습니다", full:"이미 두 사람이 있습니다",
-                taken:"그 자리는 사용 중입니다", turn:"내 차례가 아닙니다",
-                illegal:"둘 수 없는 수입니다", stale:"수가 엇갈렸습니다",
-                over:"이미 끝난 판입니다", waiting:"상대를 기다리는 중입니다"};
+             leave:"나감", time:"시간 초과", gone:"연결이 끊겨 중단"};
+const NETERR = {nocode:"없는 대국입니다", full:"자리가 찼습니다",
+                taken:"그 자리는 사용 중입니다", held:"먼저 있던 분을 기다리는 중입니다",
+                turn:"내 차례가 아닙니다", illegal:"둘 수 없는 수입니다",
+                stale:"수가 엇갈렸습니다", over:"이미 끝난 판입니다",
+                waiting:"상대를 기다리는 중입니다", badpin:"비밀번호가 맞지 않습니다",
+                busy:"지금은 대국을 더 열 수 없습니다", joined:"이미 들어가 있습니다"};
 
-let sock = null, netPly = 0, netCode = "";
+/* 사람을 알아보는 것은 이 값 하나다. 닉네임과 연승이 여기에 붙는다. */
+function myPid(){
+  let v = null;
+  try { v = localStorage.getItem("shogi-pid"); } catch (e) {}
+  if (!v || v.length < 8){
+    v = "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    try { localStorage.setItem("shogi-pid", v); } catch (e) {}
+  }
+  return v;
+}
+const PID = myPid();
+
+let sock = null, netPly = 0, netCode = "", me = null, rows = [], askCode = null;
 const nel = id => document.getElementById(id);
-const netSay  = s => { nel("netMsg").textContent = s; };
-const netOpen = v => { nel("net").hidden = !v; nel("netScrim").hidden = !v; };
+const netSay  = s => { nel("netMsg").textContent = s || ""; };
+const netOpen = v => { nel("net").hidden = !v; nel("netScrim").hidden = !v;
+                       if (v){ showList(); netAskList(); } };
 
+/* 뱃지 — 2연승 남색, 5연승 크림슨, 10연승 금색 */
+function badgeHTML(p){
+  if (!p || !p.badge) return "";
+  return `<span class="badge ${p.badge}">${p.streak}연승</span>`;
+}
+const esc = s => String(s == null ? "" : s).replace(/[&<>]/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ─── 연결 ─── */
 function netConnect(after){
   if (sock && sock.readyState === 1) return after && after();
   if (sock && sock.readyState === 0)
@@ -1451,23 +1554,24 @@ function netConnect(after){
   netSay("서버를 깨우는 중입니다 — 무료 인스턴스라 처음엔 1분쯤 걸릴 수 있습니다…");
   try { sock = new WebSocket(SERVER); }
   catch (err) { return netSay("서버 주소가 잘못됐습니다."); }
-  sock.addEventListener("open", () => { netSay("연결됐습니다."); after && after(); });
+  sock.addEventListener("open", () => {
+    netSay("");
+    sock.send(JSON.stringify({t:"hello", pid: PID}));
+    after && after();
+  });
   sock.addEventListener("message", e => {
     let m; try { m = JSON.parse(e.data); } catch (err) { return; }
     netRecv(m);
   });
   sock.addEventListener("close", () => {
-    sock = null;
+    sock = null; rows = []; showList();
     if (ONLINE()) log.innerHTML = "<b>연결이 끊겼습니다</b> · 온라인 버튼으로 다시 들어오세요";
   });
   sock.addEventListener("error", () => netSay("연결에 실패했습니다. 잠시 뒤 다시 시도해 주세요."));
 }
-function netJoin(code){
-  netConnect(() => sock.send(JSON.stringify({
-    t: "join", code: code || "",
-    token: code ? sessionStorage.getItem("shogi-" + code) : null})));
-}
-function netAsk(t){ if (sock && sock.readyState === 1) sock.send(JSON.stringify({t: t})); }
+const netTell = (t, o) => { if (sock && sock.readyState === 1)
+  sock.send(JSON.stringify(Object.assign({t}, o || {}))); };
+function netAskList(){ netConnect(() => netTell("list")); }
 
 /* 내 손이 만든 착수를 엔진의 수 하나로 옮겨 보낸다 */
 function netSend(from, to, drop){
@@ -1475,18 +1579,95 @@ function netSend(from, to, drop){
       (drop ? EG.drop(x) === drop : (!EG.drop(x) && EG.from(x) === from)));
   if (!m || !sock || sock.readyState !== 1) return;
   busy = true; deselect();
-  sock.send(JSON.stringify({t:"move", m: m, ply: netPly}));
+  netTell("move", {m: m, ply: netPly});
 }
 
+/* ─── 목록 ─── */
+function showList(){
+  const ul = nel("netList");
+  ul.innerHTML = "";
+  if (!rows.length){
+    const li = document.createElement("li");
+    li.className = "net-empty";
+    li.textContent = sock ? "열린 대국이 없습니다. 하나 열어 보세요." : "서버에 연결하는 중…";
+    ul.appendChild(li);
+  }
+  rows.forEach(r => {
+    const li = document.createElement("li");
+    const waiting = r.state === "waiting";
+    li.className = waiting ? "can" : "busy";
+    const who = waiting
+      ? `${esc(r.people[0] && r.people[0].name)} ${badgeHTML(r.people[0])}`
+      : `${esc(r.people[0] && r.people[0].name)} ${badgeHTML(r.people[0])}` +
+        `<span class="vs">vs</span>` +
+        `${esc(r.people[1] && r.people[1].name)} ${badgeHTML(r.people[1])}`;
+    li.innerHTML = `<span class="tagline">${waiting ? "대기" : "대국 중"}</span>` +
+                   `<span class="who">${who}</span>` +
+                   (r.open ? "" : `<span class="lock">비공개</span>`);
+    if (waiting) li.addEventListener("click", () => enter(r));
+    ul.appendChild(li);
+  });
+  const mine = nel("netMe");
+  mine.innerHTML = me
+    ? `<span class="lab">나</span><b>${esc(me.name)}</b>${badgeHTML(me)}`
+    : `<span class="lab">나</span><span class="vs">연결하는 중…</span>`;
+}
+function enter(r){
+  if (r.open) return netTell("join", {code: r.code});
+  askCode = r.code;
+  forms({ask:true});
+  pinAsk.clear(); pinAsk.focus();
+}
+
+/* ─── 비밀번호 칸 네 개 ─── */
+function makePin(box){
+  const inputs = [];
+  for (let i = 0; i < 4; i++){
+    const el = document.createElement("input");
+    el.maxLength = 1; el.inputMode = "numeric"; el.autocomplete = "off";
+    el.addEventListener("input", () => {
+      el.value = el.value.replace(/[^0-9]/g, "").slice(0, 1);
+      if (el.value && i < 3) inputs[i+1].focus();
+    });
+    el.addEventListener("keydown", e => {
+      if (e.key === "Backspace" && !el.value && i > 0){ inputs[i-1].focus(); e.preventDefault(); }
+      if (e.key === "ArrowLeft"  && i > 0) inputs[i-1].focus();
+      if (e.key === "ArrowRight" && i < 3) inputs[i+1].focus();
+    });
+    el.addEventListener("paste", e => {
+      const d = (e.clipboardData.getData("text") || "").replace(/[^0-9]/g, "").slice(0, 4);
+      if (!d) return;
+      e.preventDefault();
+      d.split("").forEach((c, k) => inputs[k].value = c);
+      inputs[Math.min(d.length, 3)].focus();
+    });
+    box.appendChild(el); inputs.push(el);
+  }
+  return {
+    value: () => inputs.map(i => i.value).join(""),
+    clear: () => inputs.forEach(i => i.value = ""),
+    focus: () => inputs[0].focus(),
+  };
+}
+const pinNew = makePin(nel("pinNew")), pinAsk = makePin(nel("pinAsk"));
+
+function forms(show){
+  nel("netOpen").hidden = !show.open;
+  nel("netAsk").hidden  = !show.ask;
+  nel("netList").hidden = !!(show.open || show.ask);
+}
+
+/* ─── 서버 소식 ─── */
 function netRecv(msg){
   switch (msg.t){
+    case "me":    me = msg; showList(); break;
+    case "rooms": rows = msg.rooms || []; showList(); break;
     case "seated":
       vs = "online"; mySide = msg.side; netCode = msg.code; netPly = 0;
-      sessionStorage.setItem("shogi-" + msg.code, msg.token);
-      nel("netShare").hidden = false;
-      nel("netShare").querySelector("b").textContent = msg.code;
-      netSay((msg.side === 0 ? "선공" : "후공") + "으로 앉았습니다.");
+      try { sessionStorage.setItem("shogi-" + msg.code, msg.token); } catch (e) {}
+      forms({}); netOpenPanel(false); netSay("");
       document.body.classList.remove("ai");
+      nel("reset").textContent = "나가기";
       applyOrient();
       break;
     case "state":   netState(msg); break;
@@ -1495,24 +1676,25 @@ function netRecv(msg){
     case "restart": log.textContent = "새 판입니다."; break;
     case "peer":
       log.innerHTML = msg.what === "joined"  ? "<b>상대가 들어왔습니다</b>"
-                    : msg.what === "left"    ? "<b>상대가 나갔습니다</b>"
+                    : msg.what === "left"    ? "<b>상대가 자리를 떴습니다</b>"
                     : msg.what === "rematch" ? "<b>상대가 다시 두자고 합니다</b>" : "";
-      if (msg.what === "joined") netOpen(false);
       break;
     case "error":
       netSay(NETERR[msg.why] || msg.why);
-      if (msg.why === "nocode" || msg.why === "full" || msg.why === "taken") netOpen(true);
+      if (msg.why === "badpin"){ pinAsk.clear(); pinAsk.focus(); }
+      if (!ONLINE()) netOpenPanel(true);
       busy = false;
       break;
   }
 }
+function netOpenPanel(v){ nel("net").hidden = !v; nel("netScrim").hidden = !v; }
 
-/* 서버가 내려준 사실과 화면이 다르면 화면을 버리고 다시 그린다 */
 /* 서버 소식은 연출이 도는 중에 들어온다. 그때 판을 갈아엎으면 애니메이션이
    중간에 끊기고 손패가 어긋난다. 한가해질 때까지 들고 있다가 반영한다. */
-let waitState = null, waitOver = null;
+let waitState = null, waitOver = null, netPeople = [null, null];
 function netState(st){
   netPly = st.ply; serverLeft = st.left / 1000; first = st.first;
+  netPeople = st.people || [null, null];
   waitState = st; netSync();
 }
 function netSync(){
@@ -1525,11 +1707,9 @@ function netSync(){
       && [0,1].every(s => st.hand[s].every((n, k) => mine.hand[s][k] === n));
     if (!same) netLoad(st);                 // 어긋났으면 화면을 버리고 다시 그린다
     else { turn = st.turn; updateTurn(); }
-    if (!st.ready) log.innerHTML = "방 <b>" + netCode + "</b> · 상대를 기다립니다";
-    else {
-      netOpen(false);                       // 둘이 앉았으면 방 패널은 비켜준다
-      if (!st.over && !waitOver) clockStart();
-    }
+    paintNames();
+    if (!st.ready) log.innerHTML = "대국 <b>" + netCode + "</b> · 상대를 기다립니다";
+    else if (!st.over && !waitOver) clockStart();
   }
   if (waitOver){ const ov = waitOver; waitOver = null; netOver(ov); }
 }
@@ -1568,32 +1748,55 @@ function netMoved(msg){
 }
 function netOver(ov){
   finish(ov.winner);
-  log.innerHTML = (ov.winner === null ? "<b>무승부</b>"
-                 : ov.winner === mySide ? "<b>승리</b>" : "<b>패배</b>")
-                + " · " + (WHY[ov.why] || ov.why);
+  const word = ov.why === "gone" ? "<b>중단</b>"
+             : ov.winner === null ? "<b>무승부</b>"
+             : ov.winner === mySide ? "<b>승리</b>" : "<b>패배</b>";
+  log.innerHTML = word + " · " + (WHY[ov.why] || ov.why);
+  netTell("list");
 }
-function netLeave(){
-  if (sock){ sock.close(); sock = null; }
+function netLeave(quiet){
+  if (ONLINE()) netTell("leave");
   vs = "human"; mySide = 0; serverLeft = null; netCode = "";
-  nel("netShare").hidden = true;
-  netOpen(false); applyOrient();
+  netPeople = [null, null];
+  nel("reset").textContent = "처음으로";
+  applyOrient();
+  if (!quiet) netOpenPanel(true);
+  start();
 }
 
-nel("netBtn").addEventListener("click", () => {
-  netOpen(true);
-  if (!ONLINE()) netSay("방을 만들어 코드를 알려주거나, 받은 코드로 들어갑니다.");
+/* ─── 버튼 ─── */
+nel("netBtn").addEventListener("click", () => { forms({}); netOpen(true); });
+nel("netClose").addEventListener("click", () => netOpenPanel(false));
+nel("netScrim").addEventListener("click", () => netOpenPanel(false));
+nel("netNew").addEventListener("click", () => {
+  forms({open:true}); netSay(""); pinNew.clear();
+  nel("pinNew").hidden = nel("netOpen").querySelector("input[value=shut]").checked === false;
 });
-nel("netNew").addEventListener("click", () => netJoin(""));
-nel("netJoin").addEventListener("click", () => {
-  const c = nel("netCode").value.trim().toUpperCase();
-  if (c.length === 4) netJoin(c); else netSay("코드 네 글자를 넣어 주세요.");
+nel("netCancel").addEventListener("click", () => { forms({}); netSay(""); });
+nel("netBack").addEventListener("click", () => { forms({}); netSay(""); askCode = null; });
+nel("netOpen").addEventListener("change", e => {
+  if (e.target.name !== "vis") return;
+  const shut = e.target.value === "shut";
+  nel("pinNew").hidden = !shut;
+  if (shut){ pinNew.clear(); pinNew.focus(); }
 });
-nel("netCode").addEventListener("keydown", e => { if (e.key === "Enter") nel("netJoin").click(); });
-nel("netClose").addEventListener("click", () => netOpen(false));
-nel("netScrim").addEventListener("click", () => netOpen(false));
+nel("netOpen").addEventListener("submit", e => {
+  e.preventDefault();
+  const shut = nel("netOpen").querySelector("input[value=shut]").checked;
+  if (!shut) return netConnect(() => netTell("open", {open: true}));
+  const pin = pinNew.value();
+  if (pin.length !== 4) return netSay("비밀번호는 숫자 네 자리입니다.");
+  netConnect(() => netTell("open", {open: false, pin: pin}));
+});
+nel("netAsk").addEventListener("submit", e => {
+  e.preventDefault();
+  const pin = pinAsk.value();
+  if (pin.length !== 4) return netSay("비밀번호는 숫자 네 자리입니다.");
+  netTell("join", {code: askCode, pin: pin});
+});
 
 $("#vsBtn").addEventListener("click", e => {
-  if (ONLINE()) netLeave();
+  if (ONLINE()) netLeave(true);
   vs = vs === "ai" ? "human" : "ai";
   document.body.classList.toggle("ai", vs === "ai");
   e.currentTarget.setAttribute("aria-pressed", String(vs === "ai"));

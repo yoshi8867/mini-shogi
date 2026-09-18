@@ -1,17 +1,23 @@
 /* ══════════════════════════════════════════════════════════════════════
-   방 — 대국 하나의 심판.
+   대국 — 한 판의 심판이자, 두 사람이 계속 머무는 자리.
 
    규칙은 한 벌뿐이다. 클라이언트가 쓰는 그 engine.js 를 그대로 require 해서
    서버가 직접 판을 굴린다. 그래서 "클라이언트가 보낸 수"는 제안일 뿐이고,
    진실은 언제나 이쪽 pos 다.
 
+   한 판이 끝나도 대국은 닫히지 않는다. 둘이 남아 있으면 다시 두면 되고,
+   자리를 뜨는 것은 나가기를 눌렀을 때뿐이다.
+
    이 파일은 소켓을 모른다. 넣는 것은 수와 자리, 나오는 것은 사실뿐이다.
    ══════════════════════════════════════════════════════════════════════ */
 "use strict";
 const EG = require("../shared/engine.js")();
+const players = require("./players.js");
 
 /* 한 수 30초 — 로컬 대국과 같은 규칙. 시험할 때만 MOVE_MS 로 늘린다. */
 const LIMIT_MS = +(process.env.MOVE_MS || 30000);
+/* 끊긴 사람을 이만큼 기다린다. 그 안에 돌아오면 판은 그대로다. */
+const GRACE_MS = +(process.env.GRACE_MS || 45000);
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // 헷갈리는 I O 0 1 은 뺀다
 
 function newCode(taken){
@@ -24,15 +30,22 @@ function newCode(taken){
 const newToken = () =>
   Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 
+const okPin = p => typeof p === "string" && /^[0-9]{4}$/.test(p);
+
 class Room {
-  constructor(code){
-    this.code = code;
-    this.seats = [null, null];           // 소켓 (없으면 null)
-    this.tokens = [null, null];          // 자리표 — 새로고침하면 이걸로 돌아온다
-    this.first = 0;                      // 이번 판 선공. 판마다 넘어간다
+  constructor(code, opt){
+    opt = opt || {};
+    this.code   = code;
+    this.open   = opt.open !== false;         // 기본은 공개
+    this.pin    = this.open ? null : (okPin(opt.pin) ? opt.pin : null);
+    this.seats  = [null, null];               // 소켓
+    this.people = [null, null];               // 그 자리의 사람 (players.js 레코드)
+    this.tokens = [null, null];               // 자리표 — 새로고침하면 이걸로 돌아온다
+    this.first  = 0;                          // 이번 판 선공. 판마다 넘어간다
     this.touched = Date.now();
-    this.onTimeout = null;               // 서버가 시계를 갖는다
-    this.timer = null;
+    this.timer  = null;
+    this.grace  = [null, null];
+    this.onEvent = null;                      // 방 밖으로 알릴 일이 생겼을 때
     this.reset();
   }
 
@@ -42,98 +55,144 @@ class Room {
     p.turn = this.first;
     this.pos = p;
     this.ply = 0;
-    this.moves = [];
     this.seen = new Map([[EG.hash(p), 1]]);
-    this.over = null;                    // {winner: 0|1|null, why}
+    this.over = null;                         // {winner: 0|1|null, why}
     this.deadline = 0;
     this.rematch = [false, false];
     this.startedAt = Date.now();
-    this.saved = false;      // 기보는 한 번만 남긴다
-    this.startClock();
+    this.saved = false;
+    this.syncClock();
   }
 
-  /* ─── 시계 ─── */
+  /* ─── 시계 ───────────────────────────────────────────────────────────
+     둘이 앉기 전에는 돌지 않는다. 혼자 기다리는 사람의 시간을 깎을 이유가
+     없다. 한쪽이 끊겨도 멈춘다 — 네트워크는 사람 잘못이 아니다. */
+  syncClock(){
+    if (!this.ready || this.over) return this.stopClock();
+    if (!this.timer) this.startClock();
+  }
   startClock(){
     this.stopClock();
-    if (this.over) return;
+    if (!this.ready || this.over) return;
     this.deadline = Date.now() + LIMIT_MS;
     this.timer = setTimeout(() => {
-      if (this.over) return;
-      this.finish(1 - this.pos.turn, "time");   // 시간을 넘긴 쪽이 진다
-      if (this.onTimeout) this.onTimeout(this);
+      this.timer = null;
+      if (this.over || !this.ready) return;
+      this.finish(1 - this.pos.turn, "time");
+      if (this.onEvent) this.onEvent(this, "over");
     }, LIMIT_MS);
     if (this.timer.unref) this.timer.unref();
   }
-  stopClock(){ if (this.timer){ clearTimeout(this.timer); this.timer = null; } }
-  left(){ return this.over ? 0 : Math.max(0, this.deadline - Date.now()); }
+  stopClock(){
+    if (this.timer){ clearTimeout(this.timer); this.timer = null; }
+    this.deadline = 0;
+  }
+  left(){ return (this.over || !this.timer) ? 0 : Math.max(0, this.deadline - Date.now()); }
 
-  finish(winner, why){
+  /* ─── 판을 끝낸다 ─── */
+  finish(winner, why, who){
+    if (this.over) return;
     this.over = {winner, why};
+    if (who !== undefined) this.over.who = who;
     this.stopClock();
+    this.settleStreaks();
+  }
+  /* 연승을 정리한다. 끊겨서 끝난 판은 진 것으로 치지 않는다. */
+  settleStreaks(){
+    const {winner, why} = this.over;
+    if (why === "gone")
+      return players.settle(this.people[this.over.who], null, true);
+    if (winner === null)
+      return this.people.forEach(p => players.settle(p, "draw", false));
+    players.settle(this.people[winner], "win", false);
+    players.settle(this.people[1 - winner], "loss", false);
   }
 
   /* ─── 자리 ─── */
-  seat(ws, token){
+  seat(ws, person, token){
     this.touched = Date.now();
-    // 새로고침 — 쓰던 자리표가 있으면 그 자리로 돌려보낸다
-    if (token){
+    if (token){                               // 새로고침 — 쓰던 자리로 돌려보낸다
       const s = this.tokens.indexOf(token);
       if (s >= 0){
         if (this.seats[s] && this.seats[s] !== ws) return {err: "taken"};
-        this.seats[s] = ws;
-        return {side: s, token};
+        this.clearGrace(s);
+        this.seats[s] = ws; this.people[s] = person;
+        this.syncClock();
+        return {side: s, token: token};
       }
     }
     const s = this.seats.indexOf(null);
     if (s < 0) return {err: "full"};
-    /* 빈 자리에 새 사람이 앉으면 자리표를 새로 발급한다. 먼저 있던 사람의
-       자리표는 그 순간 무효다 — 자리를 비운 사이 남이 앉았으면 그게 맞다. */
-    this.seats[s] = ws;
+    if (this.grace[s]) return {err: "held"};  // 끊긴 사람을 아직 기다리는 중이다
+    this.seats[s]  = ws;
+    this.people[s] = person;
     this.tokens[s] = newToken();
+    this.syncClock();
     return {side: s, token: this.tokens[s]};
   }
-  unseat(ws){
+
+  /* 소켓이 끊겼다. 패로 치지 않고 잠시 기다린다. */
+  drop(ws){
     const s = this.seats.indexOf(ws);
-    if (s >= 0) this.seats[s] = null;
+    if (s < 0) return -1;
+    this.seats[s] = null;
+    this.touched = Date.now();
+    this.stopClock();
+    if (!this.over && this.ply > 0){
+      this.grace[s] = setTimeout(() => {
+        this.grace[s] = null;
+        if (this.seats[s] || this.over) return;
+        this.finish(null, "gone", s);
+        this.tokens[s] = null; this.people[s] = null;
+        if (this.onEvent) this.onEvent(this, "over");
+      }, GRACE_MS);
+      if (this.grace[s].unref) this.grace[s].unref();
+    } else {
+      this.tokens[s] = null; this.people[s] = null;
+    }
+    return s;
+  }
+  clearGrace(s){ if (this.grace[s]){ clearTimeout(this.grace[s]); this.grace[s] = null; } }
+
+  /* 나가기 버튼. 두던 중이면 진 것으로 친다. */
+  leave(ws){
+    const s = this.seats.indexOf(ws);
+    if (s < 0) return -1;
+    if (!this.over && this.ply > 0) this.finish(1 - s, "leave");
+    this.clearGrace(s);
+    this.seats[s] = null; this.tokens[s] = null; this.people[s] = null;
+    this.stopClock();
     this.touched = Date.now();
     return s;
   }
-  get empty(){ return this.seats[0] === null && this.seats[1] === null; }
-  get ready(){ return this.seats[0] !== null && this.seats[1] !== null; }
+
+  get empty(){ return !this.seats[0] && !this.seats[1] && !this.grace[0] && !this.grace[1]; }
+  get ready(){ return !!this.seats[0] && !!this.seats[1]; }
 
   /* ─── 수 ─── */
-  /* 받아들이면 {ok:true, m, ply, over}, 아니면 {err} */
   play(side, m, ply){
     this.touched = Date.now();
-    if (this.over)             return {err: "over"};
-    if (!this.ready)           return {err: "waiting"};
-    if (this.pos.turn !== side)return {err: "turn"};
-    if (ply !== this.ply)      return {err: "stale"};      // 늦게 온 수는 버린다
-    if (!Number.isInteger(m))  return {err: "bad"};
+    if (this.over)              return {err: "over"};
+    if (!this.ready)            return {err: "waiting"};
+    if (this.pos.turn !== side) return {err: "turn"};
+    if (ply !== this.ply)       return {err: "stale"};
+    if (!Number.isInteger(m))   return {err: "bad"};
     if (!EG.gen(this.pos).includes(m)) return {err: "illegal"};
 
     const cap = EG.cap(m);
     EG.make(this.pos, m);
     this.ply++;
-    this.moves.push(m);
 
     if (EG.decisive(this.pos, m, cap)){
       this.finish(side, cap === EG.L ? "catch" : "try");
     } else {
       const k = EG.hash(this.pos), n = (this.seen.get(k) || 0) + 1;
       this.seen.set(k, n);
-      if (n >= 3) this.finish(null, "repeat");                 // 같은 국면 3회
-      else if (EG.gen(this.pos).length === 0)
-        this.finish(1 - this.pos.turn, "stuck");               // 둘 수 있는 수가 없다
+      if (n >= 3) this.finish(null, "repeat");
+      else if (EG.gen(this.pos).length === 0) this.finish(1 - this.pos.turn, "stuck");
       else this.startClock();
     }
-    return {ok: true, m, ply: this.ply, over: this.over, left: this.left()};
-  }
-
-  resign(side){
-    if (this.over) return null;
-    this.finish(1 - side, "resign");
-    return this.over;
+    return {ok: true, m: m, ply: this.ply, over: this.over, left: this.left()};
   }
 
   /* 양쪽이 모두 누르면 다시 시작한다. 선공은 판마다 넘어간다 */
@@ -146,19 +205,24 @@ class Room {
     return true;
   }
 
-  /* 클라이언트가 그대로 그릴 수 있는 사실 한 벌 */
+  /* 대국 안에서 보는 사실 */
   state(){
     return {
       b: Array.from(this.pos.b),
       hand: [this.pos.hand[0].slice(), this.pos.hand[1].slice()],
-      turn: this.pos.turn,
-      ply: this.ply,
-      first: this.first,
-      left: this.left(),
-      ready: this.ready,
-      over: this.over,
+      turn: this.pos.turn, ply: this.ply, first: this.first,
+      left: this.left(), ready: this.ready, over: this.over,
+      people: this.people.map(players.view),
+      code: this.code, open: this.open,
     };
+  }
+
+  /* 대국 목록에서 보는 사실 */
+  info(){
+    return {code: this.code, open: this.open,
+            state: this.ready ? "playing" : "waiting",
+            people: this.people.filter(Boolean).map(players.view)};
   }
 }
 
-module.exports = {Room, newCode, LIMIT_MS, EG};
+module.exports = {Room, newCode, okPin, LIMIT_MS, GRACE_MS, EG};

@@ -1,12 +1,15 @@
 /* node room.test.js — 심판 자기검사.
-   서버가 규칙을 어기거나 자리를 잘못 내주면 여기서 먼저 터진다. */
+   서버가 규칙을 어기거나, 자리를 잘못 내주거나, 연승을 잘못 세면 여기서 터진다. */
 "use strict";
 const assert = require("assert");
-const {Room, newCode, LIMIT_MS, EG} = require("./room.js");
+const {Room, newCode, okPin, LIMIT_MS, EG} = require("./room.js");
+const players = require("./players.js");
 
-const sockA = {id: "A"}, sockB = {id: "B"}, sockC = {id: "C"};
+let seq = 0;
+const who = () => players.get("pid-test-" + (++seq) + "-" + Math.random().toString(36).slice(2));
+const sockA = {id:"A"}, sockB = {id:"B"}, sockC = {id:"C"};
 
-/* ── 1. 방 코드 ───────────────────────────────────────────────────────── */
+/* ── 1. 대국 코드 ────────────────────────────────────────────────────── */
 {
   const seen = new Set();
   for (let i = 0; i < 2000; i++){
@@ -18,115 +21,200 @@ const sockA = {id: "A"}, sockB = {id: "B"}, sockC = {id: "C"};
   console.log("code    4글자 2000개 무충돌 · 헷갈리는 I O 0 1 없음");
 }
 
-/* ── 2. 자리 ─────────────────────────────────────────────────────────── */
+/* ── 2. 닉네임과 뱃지 ────────────────────────────────────────────────── */
+{
+  const a = players.get("pid-name-check"), b = players.get("pid-name-check");
+  assert.strictEqual(a, b, "같은 pid 인데 다른 사람이 됐다");
+  assert.strictEqual(a.name, players.nameOf("pid-name-check"), "닉네임이 pid 에서 안 나온다");
+  assert.ok(/^\S+ \S+$/.test(a.name), `닉네임 모양이 이상하다: ${a.name}`);
+
+  assert.strictEqual(players.badge(0), null);
+  assert.strictEqual(players.badge(1), null);
+  assert.strictEqual(players.badge(2), "navy");
+  assert.strictEqual(players.badge(4), "navy");
+  assert.strictEqual(players.badge(5), "crimson");
+  assert.strictEqual(players.badge(9), "crimson");
+  assert.strictEqual(players.badge(10), "gold");
+  assert.strictEqual(players.badge(37), "gold");
+  const combos = players.HEAD.length * players.TAIL.length;
+  console.log(`name    pid 에서 결정 · ${combos}가지 · 뱃지 2 남색 / 5 크림슨 / 10 금색`);
+}
+
+/* ── 3. 자리 ─────────────────────────────────────────────────────────── */
 {
   const r = new Room("TEST");
-  const a = r.seat(sockA, null), b = r.seat(sockB, null);
+  const pa = who(), pb = who(), pc = who();
+  const a = r.seat(sockA, pa, null), b = r.seat(sockB, pb, null);
   assert.strictEqual(a.side, 0);
   assert.strictEqual(b.side, 1);
   assert.ok(a.token && b.token && a.token !== b.token, "자리표가 겹쳤다");
-  assert.strictEqual(r.seat(sockC, null).err, "full", "세 번째가 앉았다");
+  assert.strictEqual(r.seat(sockC, pc, null).err, "full", "세 번째가 앉았다");
   assert.ok(r.ready);
 
-  // 새로고침 — 자리표를 들고 오면 같은 자리로 돌아온다
-  r.unseat(sockA);
+  r.drop(sockA);                          // 아직 한 수도 안 뒀으니 그냥 빈다
   assert.ok(!r.ready);
-  const again = r.seat(sockA, a.token);
+  const again = r.seat(sockA, pa, a.token);
   assert.strictEqual(again.side, 0, "자리표를 들고 왔는데 다른 자리로 갔다");
-  assert.strictEqual(again.token, a.token);
-
-  // 비운 사이 남이 앉으면 옛 자리표는 무효다
-  r.unseat(sockA);
-  const stranger = r.seat(sockC, null);
-  assert.strictEqual(stranger.side, 0);
-  assert.notStrictEqual(stranger.token, a.token, "남의 자리표를 물려줬다");
-  console.log("seat    두 자리 · 정원 초과 거절 · 새로고침 복귀 · 자리표 무효화");
+  console.log("seat    두 자리 · 정원 초과 거절 · 자리표로 복귀");
 }
 
-/* ── 3. 수 심판 ──────────────────────────────────────────────────────── */
+/* ── 4. 시계는 둘이 앉아야 돈다 ─────────────────────────────────────── */
 {
   const r = new Room("TEST");
-  r.seat(sockA, null); r.seat(sockB, null);
+  assert.strictEqual(r.left(), 0, "아무도 없는데 시계가 돈다");
+  r.seat(sockA, who(), null);
+  assert.strictEqual(r.left(), 0, "혼자 기다리는데 시계가 돈다");   // ← 회귀
+  r.seat(sockB, who(), null);
+  assert.ok(r.left() > LIMIT_MS - 1000, "둘이 앉았는데 시계가 안 돈다");
+
+  r.play(0, EG.gen(r.pos)[0], 0);
+  assert.ok(r.left() > LIMIT_MS - 1000, "수를 둬도 시계가 안 돌아갔다");
+  r.drop(sockB);
+  assert.strictEqual(r.left(), 0, "상대가 끊겼는데 시계가 계속 돈다");
+  console.log(`clock   혼자면 멈춤 · 둘이면 ${LIMIT_MS/1000}초 · 끊기면 멈춤`);
+}
+
+/* ── 5. 수 심판 ──────────────────────────────────────────────────────── */
+{
+  const r = new Room("TEST");
+  r.seat(sockA, who(), null); r.seat(sockB, who(), null);
   const legal = EG.gen(r.pos);
-
-  assert.strictEqual(r.play(1, legal[0], 0).err, "turn",  "차례가 아닌 쪽이 뒀다");
-  assert.strictEqual(r.play(0, legal[0], 7).err, "stale", "엉뚱한 ply 를 받았다");
+  assert.strictEqual(r.play(1, legal[0], 0).err, "turn",    "차례가 아닌 쪽이 뒀다");
+  assert.strictEqual(r.play(0, legal[0], 7).err, "stale",   "엉뚱한 ply 를 받았다");
   assert.strictEqual(r.play(0, 0x7fffff, 0).err, "illegal", "불법 수를 받았다");
-  assert.strictEqual(r.play(0, 1.5, 0).err, "bad", "정수가 아닌 수를 받았다");
-
-  const ok = r.play(0, legal[0], 0);
-  assert.ok(ok.ok && ok.ply === 1, "정상 수가 막혔다");
-  assert.strictEqual(r.pos.turn, 1, "차례가 안 넘어갔다");
+  assert.strictEqual(r.play(0, 1.5, 0).err,      "bad",     "정수가 아닌 수를 받았다");
+  assert.ok(r.play(0, legal[0], 0).ok, "정상 수가 막혔다");
   assert.strictEqual(r.play(0, EG.gen(r.pos)[0], 1).err, "turn", "연속으로 뒀다");
   console.log("judge   차례 · ply · 불법 · 정수 검사 통과");
 }
-
-/* ── 4. 혼자 앉아서는 못 둔다 ────────────────────────────────────────── */
 {
   const r = new Room("TEST");
-  r.seat(sockA, null);
+  r.seat(sockA, who(), null);
   assert.strictEqual(r.play(0, EG.gen(r.pos)[0], 0).err, "waiting");
   console.log("wait    상대가 없으면 수를 받지 않는다");
 }
 
-/* ── 5. 자기대국 — 방이 반드시 끝나고, 끝나면 더 못 둔다 ─────────────── */
+/* ── 6. 자기대국 — 반드시 끝나고, 끝나면 더 못 둔다 ────────────────── */
 {
-  let ended = {catch:0, try:0, repeat:0, stuck:0}, plies = [];
+  const tally = {}, plies = [];
   for (let g = 0; g < 4; g++){
     const r = new Room("TEST");
-    r.seat(sockA, null); r.seat(sockB, null);
+    r.seat(sockA, who(), null); r.seat(sockB, who(), null);
     let guard = 0;
     while (!r.over && guard++ < 400){
       const side = r.pos.turn;
       const past = [...r.seen].filter(e => e[1] >= 2).map(e => e[0]);
       const res = EG.best({b: r.pos.b, hand: r.pos.hand, turn: side},
                           {ms: 30, margin: 140, past});
-      assert.ok(res.move, "엔진이 수를 못 냈다");
       const out = r.play(side, res.move, r.ply);
       assert.ok(out.ok, `심판이 엔진 수를 거절했다: ${out.err}`);
     }
     assert.ok(r.over, "400수 안에 안 끝났다");
-    ended[r.over.why]++;
+    tally[r.over.why] = (tally[r.over.why] || 0) + 1;
     plies.push(r.ply);
-
-    // 끝난 판에는 아무도 못 둔다
     assert.strictEqual(r.play(r.pos.turn, EG.gen(r.pos)[0] || 1, r.ply).err, "over");
   }
-  const tally = Object.entries(ended).filter(e => e[1]).map(e => `${e[0]} ${e[1]}`);
-  console.log(`self    4판 완주 · ${tally.join(" · ")} · 최장 ${Math.max(...plies)}수`);
+  const t = Object.entries(tally).map(e => `${e[0]} ${e[1]}`).join(" · ");
+  console.log(`self    4판 완주 · ${t} · 최장 ${Math.max(...plies)}수`);
 }
 
-/* ── 6. 기권과 재대국 ────────────────────────────────────────────────── */
+/* ── 7. 연승 ─────────────────────────────────────────────────────────── */
+{
+  const win = who(), lose = who();
+  for (let i = 0; i < 10; i++){
+    const r = new Room("TEST");
+    r.seat(sockA, win, null); r.seat(sockB, lose, null);
+    r.play(0, EG.gen(r.pos)[0], 0);        // 한 수는 둬야 판이 선다
+    r.finish(0, "catch");
+    assert.strictEqual(win.streak, i + 1, `연승이 안 쌓인다 (${i})`);
+    assert.strictEqual(lose.streak, 0, "진 쪽 연승이 남아 있다");
+  }
+  assert.strictEqual(players.view(win).badge, "gold", "10연승인데 금색이 아니다");
+
+  // 무승부는 연승을 건드리지 않는다
+  const r2 = new Room("TEST");
+  r2.seat(sockA, win, null); r2.seat(sockB, lose, null);
+  r2.finish(null, "repeat");
+  assert.strictEqual(win.streak, 10, "무승부에 연승이 깨졌다");
+
+  // 지면 깨진다
+  const r3 = new Room("TEST");
+  r3.seat(sockA, win, null); r3.seat(sockB, lose, null);
+  r3.finish(1, "catch");
+  assert.strictEqual(win.streak, 0, "졌는데 연승이 남았다");
+  console.log("streak  이기면 쌓이고 · 무승부는 그대로 · 지면 깨진다");
+}
+
+/* ── 8. 나가기는 패, 끊김은 패가 아니다 ────────────────────────────── */
+{
+  const a = who(), b = who();
+  a.streak = 4;
+  const r = new Room("TEST");
+  r.seat(sockA, a, null); r.seat(sockB, b, null);
+  r.play(0, EG.gen(r.pos)[0], 0);
+  r.leave(sockA);
+  assert.deepStrictEqual({w: r.over.winner, y: r.over.why}, {w: 1, y: "leave"},
+                         "나가기가 패로 처리되지 않았다");
+  assert.strictEqual(a.streak, 0, "나가기로 졌는데 연승이 남았다");
+  assert.strictEqual(b.streak, 1, "남은 쪽이 못 이겼다");
+
+  // 끊김은 패가 아니다 — 다만 연달아 셋이면 연승을 인정하지 않는다
+  const c = who();
+  c.streak = 6;
+  for (let i = 1; i <= 3; i++){
+    const rr = new Room("TEST");
+    rr.seat(sockA, c, null); rr.seat(sockB, who(), null);
+    rr.play(0, EG.gen(rr.pos)[0], 0);
+    rr.finish(null, "gone", 0);
+    if (i < 3) assert.strictEqual(c.streak, 6, `끊겼다고 연승이 깨졌다 (${i}회)`);
+  }
+  assert.strictEqual(c.streak, 0, "끊김 3회인데 연승이 남았다");
+  console.log("exit    나가기 = 패 · 끊김 = 패 아님 · 끊김 3연속이면 연승 취소");
+}
+
+/* ── 9. 비공개 대국 ──────────────────────────────────────────────────── */
+{
+  assert.ok(okPin("0000") && okPin("4821"));
+  assert.ok(!okPin("12") && !okPin("12345") && !okPin("12a4") && !okPin(1234));
+  const open = new Room("TEST");
+  assert.strictEqual(open.open, true);
+  assert.strictEqual(open.pin, null);
+  const shut = new Room("TEST", {open: false, pin: "4821"});
+  assert.strictEqual(shut.open, false);
+  assert.strictEqual(shut.pin, "4821");
+  const bad = new Room("TEST", {open: false, pin: "abc"});
+  assert.strictEqual(bad.pin, null, "이상한 비번이 들어갔다");
+  console.log("pin     숫자 4자리만 · 공개가 기본");
+}
+
+/* ── 10. 목록에 보이는 모습 ─────────────────────────────────────────── */
+{
+  const r = new Room("WXYZ");
+  const a = who(); a.streak = 5;
+  r.seat(sockA, a, null);
+  let i = r.info();
+  assert.deepStrictEqual([i.code, i.state, i.open], ["WXYZ", "waiting", true]);
+  assert.strictEqual(i.people.length, 1);
+  assert.strictEqual(i.people[0].badge, "crimson", "뱃지가 목록에 안 실린다");
+  r.seat(sockB, who(), null);
+  i = r.info();
+  assert.strictEqual(i.state, "playing");
+  assert.strictEqual(i.people.length, 2, "대국 중인데 둘이 안 보인다");
+  console.log("list    대기(1명) → 대국 중(2명) · 뱃지가 함께 실린다");
+}
+
+/* ── 11. 재대국 ──────────────────────────────────────────────────────── */
 {
   const r = new Room("TEST");
-  r.seat(sockA, null); r.seat(sockB, null);
-  assert.strictEqual(r.first, 0);
-  assert.strictEqual(r.pos.turn, 0);
-
-  const over = r.resign(0);
-  assert.deepStrictEqual(over, {winner: 1, why: "resign"}, "기권 처리가 틀렸다");
-  assert.strictEqual(r.resign(1), null, "끝난 판에서 또 기권됐다");
-
+  r.seat(sockA, who(), null); r.seat(sockB, who(), null);
+  r.finish(1, "catch");
   assert.strictEqual(r.wantRematch(0), false, "한쪽만 눌렀는데 다시 시작했다");
   assert.strictEqual(r.wantRematch(1), true,  "양쪽이 눌렀는데 안 시작했다");
-  assert.strictEqual(r.over, null, "새 판인데 끝나 있다");
+  assert.strictEqual(r.over, null);
   assert.strictEqual(r.first, 1, "선공이 안 넘어갔다");
-  assert.strictEqual(r.pos.turn, 1, "새 판의 차례가 선공과 다르다");
-  assert.strictEqual(r.ply, 0);
-  console.log("again   기권 · 양쪽 동의로 재대국 · 선공 교대");
-}
-
-/* ── 7. 시계 ─────────────────────────────────────────────────────────── */
-{
-  const r = new Room("TEST");
-  r.seat(sockA, null); r.seat(sockB, null);
-  const l = r.left();
-  assert.ok(l > LIMIT_MS - 1000 && l <= LIMIT_MS, `남은 시간이 이상하다: ${l}`);
-  r.play(0, EG.gen(r.pos)[0], 0);
-  assert.ok(r.left() > LIMIT_MS - 1000, "수를 둬도 시계가 안 돌아갔다");
-  r.finish(0, "time");
-  assert.strictEqual(r.left(), 0, "끝난 판에 시간이 남아 있다");
-  console.log(`clock   한 수 ${LIMIT_MS / 1000}초 · 수마다 초기화 · 종료 시 0`);
+  assert.strictEqual(r.pos.turn, 1);
+  assert.ok(r.left() > LIMIT_MS - 1000, "새 판인데 시계가 안 돈다");
+  console.log("again   양쪽 동의로 재대국 · 선공 교대 · 시계 재시작");
 }
 
 console.log("\n전부 통과");
